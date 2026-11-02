@@ -10,6 +10,10 @@ from datetime import datetime, timezone
 from typing import Any
 from engine import Document, DocumentError, compute_state_hash
 
+# Explicite pour éviter le DeprecationWarning Python 3.12 sur l'adaptateur
+# datetime par défaut.
+sqlite3.register_adapter(datetime, lambda d: d.isoformat())
+
 
 class DocumentRepository:
     """Repository SQLite pour les documents du moteur.

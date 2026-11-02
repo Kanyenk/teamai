@@ -6,7 +6,9 @@ Ne modifie ni Document, ni DocumentStore, ni l'API existante.
 
 import sqlite3
 from pathlib import Path
+from datetime import datetime, timezone
 from typing import Any
+from engine import Document, DocumentError, compute_state_hash
 
 
 class DocumentRepository:
@@ -26,8 +28,9 @@ class DocumentRepository:
         self._connect()
 
     def _connect(self):
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA journal_mode=WAL")
         self._init_schema()
 
     def _init_schema(self):
@@ -47,6 +50,9 @@ class DocumentRepository:
     def save(self, document: Any) -> None:
         """Insère ou met à jour un document dans la base."""
         with self.conn:
+            if document.id is None:
+                import uuid
+                document.id = f"doc-{uuid.uuid4().hex[:12]}"
             self.conn.execute(
                 """
                 INSERT INTO documents
@@ -93,16 +99,20 @@ class DocumentRepository:
         rows = cursor.fetchall()
         return [self._row_to_doc(row) for row in rows]
 
-    def _row_to_doc(self, row: sqlite3.Row) -> Any:
-        """Convertit une ligne SQLite en objet Document similaire."""
-        doc = type("Document", (), {})()
+    def _row_to_doc(self, row: sqlite3.Row) -> Document:
+        """Convertit une ligne SQLite en objet Document."""
+        doc = Document(
+            doc_type=row["doc_type"],
+            numero_serie=row["numero_serie"],
+            date_creation=row["date_creation"],
+            org_id=row["org_id"],
+            currency="EUR",
+            retention=0.0,
+            balance=0.0,
+            hash_etat=row["etat_hash"],
+            created_by="system",
+        )
         doc.id = row["id"]
-        doc.doc_type = row["doc_type"]
-        doc.numero_serie = row["numero_serie"]
-        doc.org_id = row["org_id"]
-        doc.date_creation = row["date_creation"]
-        doc.etat = row["etat"]
-        doc.etat_hash = row["etat_hash"]
         return doc
 
     def close(self):

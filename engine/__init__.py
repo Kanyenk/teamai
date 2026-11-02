@@ -105,7 +105,7 @@ class Document:
                 "acteur": created_by,
             }
         ]
-        self._set_state(STATE_DRAFT, created_by)
+        self._etat = STATE_DRAFT
 
     # -- accesseurs ---------------------------------------------------
 
@@ -131,7 +131,14 @@ class Document:
         self.etats.append(
             {"etat": etat, "date_etat": self.date_creation, "acteur": acteur}
         )
-        self.hash_etat = compute_state_hash(etat, self)
+        self.hash_etat = compute_state_hash(
+            etat,
+            self.numero_serie,
+            self.org_id,
+            self.currency,
+            self.retention,
+            self.balance,
+        )
 
     def transition(self, etat: str, acteur: str) -> None:
         self._set_state(etat, acteur)

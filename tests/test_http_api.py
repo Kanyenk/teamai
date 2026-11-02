@@ -12,6 +12,8 @@ Couverture :
 import unittest
 import tempfile
 import json
+import sys
+import io
 from datetime import datetime, timezone
 from pathlib import Path
 from http.server import HTTPServer
@@ -34,6 +36,8 @@ class TestHttpApi(unittest.TestCase):
         self.server.store = self.repo
 
         import threading
+        # Supprime les logs du serveur HTTP pendant les tests
+        HttpHandler.log_message = lambda self, format, *args: None
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 

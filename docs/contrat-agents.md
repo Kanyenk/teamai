@@ -81,6 +81,7 @@ En-tête de fichier agentique : `--- title: ... date: ... tags: [...sources...] 
 
 - Cycle rapide : 24 h d'un agent × 3 par jour.
 - Validation fondateur : 1 par journée, pas plus.
-```
 
-Attention : n'invente pas de chiffre. Cite la source. Si tu ne sais pas, écris "hypothèse — à tester", pas "chiffre de fait".
+## 7. Règle anti-invention
+
+Attention : n'invente pas de chiffre. Cite la source. Si tu ne sais pas, écris « hypothèse — à tester », pas « chiffre de fait ».

@@ -9,7 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from engine import Document, DocumentError, compute_state_hash
+from engine import Document, DocumentError as EngineDocumentError, compute_state_hash
+from engine.exceptions import DocumentError
 from engine.documents import DocumentStore, Document as DocumentStoreDocument
 from engine.exceptions import (
     EngineError,
@@ -41,7 +42,7 @@ class TestDocumentCreation(unittest.TestCase):
         )
 
     def test_document_type_validation(self):
-        with self.assertRaises(DocumentError):
+        with self.assertRaises(EngineDocumentError):
             Document(
                 doc_type="INVALID",
                 numero_serie=1,
@@ -50,7 +51,7 @@ class TestDocumentCreation(unittest.TestCase):
             )
 
     def test_document_number_serie_validation(self):
-        with self.assertRaises(DocumentError):
+        with self.assertRaises(EngineDocumentError):
             Document(
                 doc_type="FACT",
                 numero_serie=0,

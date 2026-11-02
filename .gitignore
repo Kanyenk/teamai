@@ -9,3 +9,6 @@ venv/
 out/
 *.bak
 *.tmp
+
+__pycache__/
+*.py[cod]

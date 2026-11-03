@@ -19,16 +19,23 @@ Usage:
 
 import json
 import re
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from typing import Any, Dict
 
 from engine import Document, DocumentError
+
+try:
+    from engine.auth import TokenAuth
+except ImportError:
+    TokenAuth = None
 
 
 class HttpHandler(BaseHTTPRequestHandler):
     """Gestionnaire de requêtes HTTP pour l'API documents."""
 
     store = None  # défini par l'application avant de démarrer
+    auth = None   # défini par l'application avant de démarrer (TokenAuth)
 
     def _send_json(self, status: int, data: Dict):
         body = json.dumps(data).encode("utf-8")
@@ -48,10 +55,29 @@ class HttpHandler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length)
         return json.loads(raw.decode("utf-8"))
 
+    def _require_auth(self) -> bool:
+        """Vérifie l'authentification sauf pour /health.
+
+        Retourne True si l'accès est autorisé, False si 401 doit être envoyé.
+        """
+        if self.path == "/health":
+            return True
+        if self.auth is None:
+            # Pas d'authentification configurée : toutes les routes accessibles
+            return True
+        if self.auth.authenticate(self.headers.get("Authorization")):
+            return True
+        self._send_error(401, "Unauthorized: missing or invalid token")
+        return False
+
     def do_GET(self):
+        if not self._require_auth():
+            return
         path = self.path.rstrip("/") or "/documents"
         if path == "/documents":
             self._list_documents()
+        elif path == "/health":
+            self._send_json(200, {"status": "ok"})
         else:
             match = re.match(r"^/documents/([^/]+)$", path)
             if match:
@@ -60,6 +86,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                 self._send_error(404, "Not Found")
 
     def do_POST(self):
+        if not self._require_auth():
+            return
         path = self.path.rstrip("/") or "/documents"
         if path == "/documents":
             self._create_document()
@@ -158,9 +186,16 @@ class HttpHandler(BaseHTTPRequestHandler):
         }
 
 
-def make_app(store):
-    """Retourne un handler typé pour le repository donné."""
+def make_app(store, auth=None):
+    """Retourne un handler typé pour le repository donné.
+
+    Args:
+        store: Le DocumentRepository.
+        auth: Instance de TokenAuth (optionnel).
+    """
     class _HttpHandler(HttpHandler):
         pass
+
     _HttpHandler.store = store
+    _HttpHandler.auth = auth
     return _HttpHandler

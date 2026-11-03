@@ -1,0 +1,352 @@
+openapi: "3.0.3"
+info:
+  title: "TeamAI Engine HTTP API"
+  description: "API minimale du moteur de documents TeamAI - version openapi"
+  version: "1.0.0"
+  contact:
+    name: "TeamAI"
+    email: "teamai@example.com"
+servers:
+  - url: "http://localhost:8000"
+    description: "Local development server"
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: "Vérification de santé du service"
+      description: "Endpoint sans authentification. Retourne l'état du service."
+      operationId: "getHealth"
+      responses:
+        "200":
+          description: "Service opérationnel"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  status:
+                    type: "string"
+                    example: "ok"
+
+  /documents:
+    post:
+      summary: "Créer un document"
+      description: "Crée un nouveau document comptable. Nécessite un token Bearer valide."
+      operationId: "createDocument"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+      responses:
+        "201":
+          description: "Document créé avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          description: "Requête invalide (champs manquants, règles métier non respectées)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Authentification requise ou token invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Erreur interne du serveur"
+
+    get:
+      summary: "Lister les documents"
+      description: "Renvoie la liste paginée des documents. Nécessite un token Bearer valide."
+      operationId: "listDocuments"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: "limit"
+          in: "query"
+          description: "Nombre maximum de documents à retourner"
+          required: false
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: "offset"
+          in: "query"
+          description: "Décalage pour la pagination"
+          required: false
+          schema:
+            type: "integer"
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: "Liste des documents"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  items:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/Document"
+                  total:
+                    type: "integer"
+                    example: 10
+                  limit:
+                    type: "integer"
+                    example: 50
+                  offset:
+                    type: "integer"
+                    example: 0
+        "401":
+          description: "Authentification requise ou token invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Erreur interne du serveur"
+
+  /documents/{id}:
+    parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        description: "Identifiant du document"
+        schema:
+          type: "string"
+    get:
+      summary: "Lire un document"
+      description: "Retourne les détails d'un document. Nécessite un token Bearer valide."
+      operationId: "getDocument"
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "Document trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "401":
+          description: "Authentification requise ou token invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Document non trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Erreur interne du serveur"
+
+  /documents/{id}/transition:
+    parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        description: "Identifiant du document"
+        schema:
+          type: "string"
+    post:
+      summary: "Appliquer une transition d'état"
+      description: "Valide et applique une transition d'état sur un document. Nécessite un token Bearer valide."
+      operationId: "transitionDocument"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionRequest"
+      responses:
+        "200":
+          description: "Transition appliquée avec succès"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          description: "Transition refusée (règles métier non respectées)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Authentification requise ou token invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Document non trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Erreur interne du serveur"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Token Bearer obtenu auprès de l'API d'authentification"
+
+  schemas:
+    Document:
+      type: "object"
+      required:
+        - "id"
+        - "doc_type"
+        - "numero_serie"
+        - "org_id"
+        - "date_creation"
+        - "etat"
+      properties:
+        id:
+          type: "string"
+          description: "Identifiant unique du document"
+          example: "doc-1a2b3c4d5e6f"
+        doc_type:
+          type: "string"
+          enum: ["FACT", "BC", "BL", "NC", "RS", "CHQ"]
+          description: "Type de document"
+          example: "FACT"
+        numero_serie:
+          type: "integer"
+          minimum: 1
+          description: "Numéro de série du document"
+          example: 12345
+        org_id:
+          type: "integer"
+          minimum: 1
+          description: "Identifiant de l'organisation"
+          example: 1
+        currency:
+          type: "string"
+          description: "Devise du document"
+          example: "EUR"
+        retention:
+          type: "number"
+          minimum: 0
+          maximum: 1
+          description: "Taux de rétention"
+          example: 0.0
+        balance:
+          type: "number"
+          description: "Solde du document"
+          example: 0.0
+        date_creation:
+          type: "string"
+          format: "date-time"
+          description: "Date de création"
+          example: "2026-11-03T00:00:00Z"
+        etat:
+          type: "string"
+          description: "État courant du document"
+          example: "brouillon"
+        etats:
+          type: "array"
+          description: "Historique des états"
+          items:
+            type: "object"
+            properties:
+              etat:
+                type: "string"
+                description: "État"
+              date_etat:
+                type: "string"
+                format: "date-time"
+                description: "Date de l'état"
+              acteur:
+                type: "string"
+                description: "Acteur qui a appliqué l'état"
+
+    CreateDocumentRequest:
+      type: "object"
+      required:
+        - "doc_type"
+        - "numero_serie"
+        - "org_id"
+      properties:
+        doc_type:
+          type: "string"
+          enum: ["FACT", "BC", "BL", "NC", "RS", "CHQ"]
+          description: "Type de document"
+          example: "FACT"
+        numero_serie:
+          type: "integer"
+          minimum: 1
+          description: "Numéro de série du document"
+          example: 12345
+        org_id:
+          type: "integer"
+          minimum: 1
+          description: "Identifiant de l'organisation"
+          example: 1
+        currency:
+          type: "string"
+          description: "Devise du document"
+          example: "EUR"
+        retention:
+          type: "number"
+          minimum: 0
+          maximum: 1
+          description: "Taux de rétention"
+          example: 0.0
+        balance:
+          type: "number"
+          description: "Solde du document"
+          example: 0.0
+        date_creation:
+          type: "string"
+          format: "date-time"
+          description: "Date de création (optionnelle, par défaut maintenant)"
+          example: "2026-11-03T00:00:00Z"
+
+    TransitionRequest:
+      type: "object"
+      required:
+        - "etat"
+      properties:
+        etat:
+          type: "string"
+          description: "État de destination"
+          example: "brouillon_pdf"
+        acteur:
+          type: "string"
+          description: "Acteur initiant la transition"
+          example: "system"
+
+    Error:
+      type: "object"
+      properties:
+        error:
+          type: "object"
+          properties:
+            code:
+              type: "string"
+              description: "Code d'erreur technique"
+            message:
+              type: "string"
+              description: "Message d'erreur humain"

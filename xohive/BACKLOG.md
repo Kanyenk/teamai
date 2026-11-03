@@ -163,9 +163,9 @@
 | 3 | User | L |
 | 4 | Role & Permission | L |
 | 5 | AuditEvent | M | ✗ (terminé `db78d8e`, 2026-11-03) |
-| 6 | Events | M |
-| 7 | API HTTP sécurisée | L |
-| 8 | Document | L |
+| 6 | Events | M | ✗ (terminé `adc87fc`, 2026-11-03) |
+|| 7 | API HTTP sécurisée | L |
+|| 8 | Document | L |
 | 9 | Workflow | M |
 | 10 | Ledger | L |
 

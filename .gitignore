@@ -17,3 +17,6 @@ __pycache__/
 *.swp
 *.swo
 .hermes.md.swp
+
+# Données runtime
+/data/

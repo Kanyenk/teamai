@@ -171,9 +171,184 @@
 
 ---
 
-## Règles d'engagement
+## Nouveau module : CRM minimal (prochaine priorité)
 
-- Chaque tâche est activable via `engine/` et testée dans `tests/`.
-- Les modules du socle sont accessibles via `xohive/` (dossier racine du projet).
-- Toute modification nécessite une mise à jour de la documentation (`ARCHITECTURE.md`, `API.md`, `CHANGELOG.md`).
-- Les tests doivent être exécutés avant tout push et atteindre 90/90 OK.
+Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activités**.
+
+> **Dépendances** : tous les modules suivants nécessitent les entités communes du socle ERP
+> (Organization, User, Role, Permission) vues aux tâches 1 à 4.
+
+---
+
+## 11. CRM — Entreprise (Company)
+
+**Description** : Créer l'entité `Company` (id, name, siret, address, city, zip_code, country, website, phone, email, contact_person, is_active, created_by, created_at, updated_at) et son repository. Implémenter les règles métier (SIRET format 14 chiffres, email valid, etc.).
+
+**Critère d'acceptation** :
+- [ ] `Company` initialisable avec les champs
+- [ ] `CompanyRepository` CRUD (create, get, list, update, delete)
+- [ ] Validation : SIRET 14 chiffres, email format
+- [ ] Tests pour CRUD et validation
+
+**Estimation** : M
+
+**Dépendances** : socle (tâches 1-4), Organisation
+
+---
+
+## 12. CRM — Contact (Contact)
+
+**Description** : Créer l'entité `Contact` (id, first_name, last_name, email, phone, company_id, job_title, is_active, created_by, created_at, updated_at) et son repository. Implémenter le lien N→1 avec Company.
+
+**Critère d'acceptation** :
+- [ ] `Contact` initialisable avec les champs
+- [ ] `ContactRepository` CRUD
+- [ ] Validation : email unique, nom non vide
+- [ ] Association avec Company (`company_id`)
+- [ ] Tests pour CRUD
+
+**Estimation** : M
+
+**Dépendances** : tâche 11 (Entreprise)
+
+---
+
+## 13. CRM — Opportunité (Opportunity)
+
+**Description** : Créer l'entité `Opportunity` (id, company_id, contact_id, title, amount, stage, probability, close_date, is_active, created_by, created_at, updated_at) et son repository. Implémenter le pipeline d'états (prospecting → qualifier → proposition → négociation → fermé).
+
+**Critère d'acceptation** :
+- [ ] `Opportunity` avec les champs
+- [ ] `OpportunityRepository` CRUD
+- [ ] Machine à états du pipeline
+- [ ] Validation : amount > 0, stage dans l'ensemble des états
+- [ ] Tests pour CRUD et transitions
+
+**Estimation** : M
+
+**Dépendances** : tâches 11 (Entreprise), 12 (Contact)
+
+---
+
+## 14. CRM — Pipeline (Pipeline)
+
+**Description** : Créer le module `Pipeline` :
+- `PipelineDefinition` (id, name, stage_schema)
+- `PipelineInstance` (id, pipeline_id, stage, opportunity_id, metadata)
+- `PipelineEngine` qui orchestre les transitions de stage
+
+**Critère d'acceptation** :
+- [ ] `PipelineDefinition` définit les stages et leurs séquences
+- [ ] `PipelineInstance` suit le stage courant
+- [ ] `PipelineEngine.transition()` valide et déclenche les hooks
+- [ ] Hooks (`on_stage_change`, `on_opportunity_close`)
+- [ ] Tests pour transitions et hooks
+
+**Estimation** : M
+
+**Dépendances** : tâche 13 (Opportunité)
+
+---
+
+## 15. CRM — Activité (Activity)
+
+**Description** : Créer l'entité `Activity` (id, company_id, contact_id, user_id, type, subject, description, date, duration, status, is_active, created_by, created_at, updated_at) et son repository. Implémenter les types d'activités (appel, réunion, email, note).
+
+**Critère d'acceptation** :
+- [ ] `Activity` avec les champs
+- [ ] `ActivityRepository` CRUD
+- [ ] Types d'activités valides
+- [ ] Associations N→1 : Company, Contact, User
+- [ ] Tests pour CRUD
+
+**Estimation** : M
+
+**Dépendances** : tâches 11 (Entreprise), 12 (Contact), 3 (User)
+
+---
+
+## 16. CRM — API REST
+
+**Description** : Créer les endpoints REST pour le module CRM :
+- `GET /api/v1/crm/companies`
+- `POST /api/v1/crm/companies`
+- `GET /api/v1/crm/companies/{id}`
+- `PUT /api/v1/crm/companies/{id}`
+- `GET /api/v1/crm/contacts`
+- `POST /api/v1/crm/contacts`
+- `GET /api/v1/crm/contacts/{id}`
+- `GET /api/v1/crm/opportunities`
+- `POST /api/v1/crm/opportunities`
+- `GET /api/v1/crm/opportunities/{id}`
+- `GET /api/v1/crm/pipeline/{company_id}`
+- `GET /api/v1/crm/activities`
+- `POST /api/v1/crm/activities`
+- Authentification Bearer, pagination, validation
+
+**Critère d'acceptation** :
+- [ ] Tous les endpoints implémentés et testés
+- [ ] Auth Bearer sur tous les endpoints
+- [ ] Validation des requêtes (pydantic)
+- [ ] Réponses JSON cohérentes
+- [ ] Tests (30+ tests)
+
+**Estimation** : M
+
+**Dépendances** : tâches 11, 12, 13, 14, 15, 7 (API)
+
+---
+
+## 17. CRM — Audit
+
+**Description** : Implémenter le suivi d'audit pour le module CRM :
+- Créer des `AuditEvent` pour les modifications de Company, Contact, Opportunity, Activity
+- Hooks intégrés aux repositories CRM
+- Compatibilité avec le système d'événements (EventBus)
+
+**Critère d'acceptation** :
+- [ ] `AuditEvent` créé pour chaque mutation CRM
+- [ ] Filtrage par organisation_id, entity_type, entity_id
+- [ ] Compatibilité avec le EventBus
+- [ ] Tests pour l'audit CRM
+
+**Estimation** : L
+
+**Dépendances** : tâches 11, 12, 13, 14, 15, 5 (AuditEvent), 6 (Events)
+
+---
+
+## Notes d'architecture
+
+- **Mise en œuvre** : créer le sous-module `xohive/crm/` avec les domaines, repositories et API.
+- **Arborescence suggérée** :
+  ```
+  xohive/crm/
+  ├── README.md
+  ├── CHARTER.md
+  ├── domain/
+  │   ├── __init__.py
+  │   ├── company.py
+  │   ├── contact.py
+  │   ├── opportunity.py
+  │   ├── pipeline.py
+  │   └── activity.py
+  ├── repository/
+  │   ├── __init__.py
+  │   ├── company_repository.py
+  │   ├── contact_repository.py
+  │   ├── opportunity_repository.py
+  │   ├── pipeline_repository.py
+  │   └── activity_repository.py
+  ├── api/
+  │   ├── __init__.py
+  │   └── v1/
+  │       ├── __init__.py
+  │       ├── companies.py
+  │       ├── contacts.py
+  │       ├── opportunities.py
+  │       ├── pipeline.py
+  │       └── activities.py
+  └── tests/
+      └── test_crm.py
+  ```
+- **Validation** : lancer tous les tests (`.venv/bin/python -m unittest discover -s tests -v`) avant le commit.

@@ -6,6 +6,7 @@ aucune persistance ou écriture n'est implantée ici.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from engine import Document, DocumentError, compute_state_hash
@@ -121,3 +122,53 @@ def validate_input(data: dict[str, Any]) -> dict[str, Any]:
         "FACT", "BC", "BL", "NC", "RS", "CHQ"):
         raise ValidationError("doc_type invalide", code="VAL400")
     return data
+
+
+def create_document(
+    doc_type: str,
+    numero_serie: int,
+    org_id: int,
+    currency: str = "EUR",
+    retention: float = 0.0,
+    balance: float = 0.0,
+) -> Document:
+    """Crée un document après validation des règles business.
+
+    Utilise ``DocumentValidator.validate_creation`` pour s'assurer que
+    les arguments respectent les règles métier (type, numéro de série,
+    org_id, devise, retention, balance).
+    """
+    from engine.validation import DocumentValidator
+
+    validator = DocumentValidator()
+    validator.validate_creation(
+        doc_type=doc_type,
+        numero_serie=numero_serie,
+        org_id=org_id,
+        currency=currency,
+        retention=retention,
+        balance=balance,
+    )
+    return Document(
+        doc_type=doc_type,
+        numero_serie=numero_serie,
+        org_id=org_id,
+        date_creation=datetime.now(timezone.utc).isoformat(),
+        currency=currency,
+        retention=retention,
+        balance=balance,
+    )
+
+
+def transition_document(document: Document, etat: str) -> Document:
+    """Applique une transition d'état après validation des règles métier.
+
+    Utilise ``DocumentValidator.validate_transition`` pour s'assurer que
+    la transition est autorisée depuis l'état courant du document.
+    """
+    from engine.validation import DocumentValidator
+
+    validator = DocumentValidator()
+    validator.validate_transition(document, etat)
+    document.transition(etat, "system")
+    return document

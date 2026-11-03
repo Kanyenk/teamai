@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  teamai-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TEAMAI_DB_PATH=/app/data/teamai.db
+      - TEAMAI_TOKENS=${TEAMAI_TOKENS:-}
+    restart: unless-stopped

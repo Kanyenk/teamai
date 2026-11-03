@@ -199,3 +199,31 @@ def make_app(store, auth=None):
     _HttpHandler.store = store
     _HttpHandler.auth = auth
     return _HttpHandler
+
+if __name__ == "__main__":
+    import argparse
+    import os
+    from http.server import HTTPServer
+
+    from engine.auth import TokenAuth
+    from engine.repository import DocumentRepository
+
+    parser = argparse.ArgumentParser(description="TeamAI HTTP API")
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--db", default=os.path.join("data", "teamai.db"))
+    args = parser.parse_args()
+
+    raw_tokens = os.environ.get("TEAMAI_TOKENS", "").strip()
+    if not raw_tokens:
+        raise SystemExit("TEAMAI_TOKENS manquant : refus de démarrer sans token")
+
+    valid_tokens = {t.strip() for t in raw_tokens.split(",") if t.strip()}
+    auth = TokenAuth(valid_tokens)
+    store = DocumentRepository(args.db)
+    handler = make_app(store, auth=auth)
+
+    os.makedirs(os.path.dirname(args.db) or ".", exist_ok=True)
+    server = HTTPServer((args.host, args.port), handler)
+    print(f"TeamAI API listening on {args.host}:{args.port}", flush=True)
+    server.serve_forever()

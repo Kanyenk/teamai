@@ -236,11 +236,16 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Description** : Créer l'entité `Contact` (id, first_name, last_name, email, phone, company_id, job_title, is_active, created_by, created_at, updated_at) et son repository. Implémenter le lien N→1 avec Company.
 
 **Critère d'acceptation** :
-- [ ] `Contact` initialisable avec les champs
-- [ ] `ContactRepository` CRUD
-- [ ] Validation : email unique, nom non vide
-- [ ] Association avec Company (`company_id`)
-- [ ] Tests pour CRUD
+- [x] `Contact` initialisable avec les champs
+- [x] `ContactRepository` CRUD
+- [x] Validation : email unique, nom non vide
+- [x] Association avec Company (`company_id`)
+- [x] Tests pour CRUD
+
+**Résultat** :
+- Commit: `0fb62b5` — feat(crm): add Contact entity and repository
+- Push: `0fb62b5` — main publié
+- Tests: 278/278 OK
 
 **Estimation** : M
 

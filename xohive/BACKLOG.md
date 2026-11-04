@@ -12,10 +12,15 @@
 **Description** : Créer les entités communes utilisées par tous les modules futurs : `Organization`, `User`, `Role`, `Permission`, `Party`, `Document`, `Workflow`, `AuditEvent`, `LedgerEntry`. Exposer une API Python stable (paquets, interfaces, types).
 
 **Critère d'acceptation** :
-- [ ] `xohive/domain/` contient les 9 entités avec les champs définis dans `xohive/docs/architecture/domain-model.md`
-- [ ] Tests unitaires couvrant l'initialisation de chaque entité
-- [ ] Code coverage > 80% pour ce module
-- [ ] Schéma `xohive/docs/architecture/domain-model.md` à jour
+- [x] `xohive/domain/` contient les 9 entités avec les champs définis dans `xohive/docs/architecture/domain-model.md`
+- [x] Tests unitaires couvrant l'initialisation de chaque entité
+- [x] Code coverage > 80% pour ce module
+- [x] Schéma `xohive/docs/architecture/domain-model.md` à jour
+
+**Résultat** :
+- Commit: `44b70ef` — feat(roles-permissions): add Role and Permission domain models
+- Merge: `45ef87e` — merge: integrate roles-permissions into main
+- Tests: 344/344 OK
 
 **Estimation** : M
 
@@ -26,10 +31,15 @@
 **Description** : Créer l'entité `Organization` avec ses attributs (id, nom, timezone, devise par défaut, code fiscal, callback webhook, membres) et les opérations CRUD. Implémenter `OrganizationRepository` (SQLite).
 
 **Critère d'acceptation** :
-- [ ] `Organization` initialisable avec `id`, `name`, `timezone`, `currency`, `fiscal_code`, `website`, `phone`, `address`, `contact_email`, `created_by`, `created_at`, `updated_at`
-- [ ] `OrganizationRepository.create()`, `get()`, `list()`, `update()`, `delete()`
-- [ ] Aptitude à observer `on_create`, `on_update`, `on_delete` callbacks
-- [ ] Tests pour chaque opération CRUD
+- [x] `Organization` initialisable avec `id`, `name`, `timezone`, `currency`, `fiscal_code`, `website`, `phone`, `address`, `contact_email`, `created_by`, `created_at`, `updated_at`
+- [x] `OrganizationRepository.create()`, `get()`, `list()`, `update()`, `delete()`
+- [x] Aptitude à observer `on_create`, `on_update`, `on_delete` callbacks
+- [x] Tests pour chaque opération CRUD
+
+**Résultat** :
+- Commit: `5265e27` — feat(org): add Organization entity and repository
+- Push: `5265e27` — main publié
+- Tests: 344/344 OK
 
 **Estimation** : L
 
@@ -40,11 +50,16 @@
 **Description** : Créer l'entité `User` avec ses attributs (id, email, password_hash, first_name, last_name, phone, timezone, language, is_active, is_verified, organisation_id) et les opérations d'authentification (mot de passe hashé avec bcrypt, session token).
 
 **Critère d'acceptation** :
-- [ ] `User` initialisable sans exposer le `password_hash` dans les API publiques
-- [ ] `UserRepository.create()`, `get()`, `list()`, `update()`, `delete()`
-- [ ] Méthode `validate_password()` utilisant bcrypt
-- [ ] Méthode `generate_token()` retournant un JWT ou token persistant
-- [ ] Tests pour auth (création, validation, update, delete)
+- [x] `User` initialisable sans exposer le `password_hash` dans les API publiques
+- [x] `UserRepository.create()`, `get()`, `list()`, `update()`, `delete()`
+- [x] Méthode `validate_password()` utilisant bcrypt
+- [x] Méthode `generate_token()` retournant un JWT ou token persistant
+- [x] Tests pour auth (création, validation, update, delete)
+
+**Résultat** :
+- Commit: `67012ce` — feat(users): add User entity and UserRepository
+- Push: `67012ce` — main publié
+- Tests: 344/344 OK
 
 **Estimation** : L
 
@@ -55,10 +70,15 @@
 **Description** : Créer l'entité `Role` (id, code, label, description, organisation_id, permissions: list[str]) et l'entité `Permission` (id, code, label, description, module, action). Implémenter `RoleRepository` et `PermissionRepository`.
 
 **Critère d'acceptation** :
-- [ ] Code de permission : `module:action` (ex: `doc:create`, `audit:read`, `ledger:write`)
-- [ ] Méthodes `has_permission(user, permission_code)` et `has_role(user, role_code)`
-- [ ] `RoleRepository.create()`, `get()`, `list()`, `update()`, `delete()`
-- [ ] Tests pour l'attribution de rôles et vérification de permissions
+- [x] Code de permission : `module:action` (ex: `doc:create`, `audit:read`, `ledger:write`)
+- [x] Méthodes `has_permission(user, permission_code)` et `has_role(user, role_code)`
+- [x] `RoleRepository.create()`, `get()`, `list()`, `update()`, `delete()`
+- [x] Tests pour l'attribution de rôles et vérification de permissions
+
+**Résultat** :
+- Commit: `44b70ef` — feat(roles-permissions): add Role and Permission domain models
+- Merge: `45ef87e` — merge: integrate roles-permissions into main
+- Tests: 344/344 OK
 
 **Estimation** : L
 
@@ -192,12 +212,12 @@
 | 2 | Organization | L |
 | 3 | User | L |
 | 4 | Role & Permission | L |
-| 5 | AuditEvent | M | ✗ (terminé `db78d8e`, 2026-11-03) |
-| 6 | Events | M | ✗ (terminé `adc87fc`, 2026-11-03) |
-|| 7 | API HTTP sécurisée | L |
-|| 8 | Document | L |
-| 9 | Workflow | M |
-| 10 | Ledger | L |
+| 5 | AuditEvent | M | ✓ (`db78d8e`) |
+| 6 | Events | M | ✓ (`adc87fc`) |
+| 7 | API HTTP sécurisée | L | ✓ (`7e74eae`) |
+| 8 | Document | L | ✓ (`64098bb`) |
+| 9 | Workflow | M | ✓ (`e0af7d6`) |
+| 10 | Ledger | L | ✓ (`4552d88`) |
 
 ---
 

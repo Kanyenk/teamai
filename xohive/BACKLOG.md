@@ -305,11 +305,16 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Description** : Créer l'entité `Activity` (id, company_id, contact_id, user_id, type, subject, description, date, duration, status, is_active, created_by, created_at, updated_at) et son repository. Implémenter les types d'activités (appel, réunion, email, note).
 
 **Critère d'acceptation** :
-- [ ] `Activity` avec les champs
-- [ ] `ActivityRepository` CRUD
-- [ ] Types d'activités valides
-- [ ] Associations N→1 : Company, Contact, User
-- [ ] Tests pour CRUD
+- [x] `Activity` avec les champs
+- [x] `ActivityRepository` CRUD
+- [x] Types d'activités valides
+- [x] Associations N→1 : Company, Contact, User
+- [x] Tests pour CRUD
+
+**Résultat** :
+- Commit: `4421b21` — feat(crm): add Activity entity and repository
+- Push: `4421b21` — main publié
+- Tests: 336/336 OK
 
 **Estimation** : M
 

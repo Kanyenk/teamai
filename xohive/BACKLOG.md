@@ -154,11 +154,16 @@
 **Description** : Créer l'entité `LedgerEntry` (id, organisation_id, user_id, ledger_type, reference, debit, credit, balance, doc_id, created_by, created_at, updated_at) et son repository. Implémenter `Ledger` qui calcule le solde, valide l'équilibre (débit = crédit), et génère des `AuditEvent` sur chaque écriture.
 
 **Critère d'acceptation** :
-- [ ] `LedgerEntry` avec champs complets
-- [ ] `LedgerRepository` persiste les écritures
-- [ ] `Ledger.calculate_balance(organisation_id)` retourne la somme des débits et crédits
-- [ ] Écriture avec débit ≠ crédit → `LedgerBalanceError`
-- [ ] Tests pour équilibre, création, récupération, calcul de solde
+- [x] `LedgerEntry` avec champs complets
+- [x] `LedgerRepository` persiste les écritures
+- [x] `Ledger.calculate_balance(organisation_id)` retourne la somme des débits et crédits
+- [x] Écriture avec débit ≠ crédit → `LedgerBalanceError`
+- [x] Tests pour équilibre, création, récupération, calcul de solde
+
+**Résultat** :
+- Commit: `4552d88` — feat(ledger): add LedgerEntry entity and ledger engine
+- Push: `4552d88` — main publié
+- Tests: 238/238 OK
 
 **Estimation** : L
 

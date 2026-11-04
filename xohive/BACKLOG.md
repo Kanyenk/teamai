@@ -215,10 +215,15 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Description** : Créer l'entité `Company` (id, name, siret, address, city, zip_code, country, website, phone, email, contact_person, is_active, created_by, created_at, updated_at) et son repository. Implémenter les règles métier (SIRET format 14 chiffres, email valid, etc.).
 
 **Critère d'acceptation** :
-- [ ] `Company` initialisable avec les champs
-- [ ] `CompanyRepository` CRUD (create, get, list, update, delete)
-- [ ] Validation : SIRET 14 chiffres, email format
-- [ ] Tests pour CRUD et validation
+- [x] `Company` initialisable avec les champs
+- [x] `CompanyRepository` CRUD (create, get, list, update, delete)
+- [x] Validation : SIRET 14 chiffres, email format
+- [x] Tests pour CRUD et validation
+
+**Résultat** :
+- Commit: `bebb082` — feat(crm): add Company entity and repository
+- Push: `bebb082` — main publié
+- Tests: 258/258 OK
 
 **Estimation** : M
 

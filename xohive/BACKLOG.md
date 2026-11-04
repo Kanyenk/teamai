@@ -366,10 +366,15 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - Compatibilité avec le système d'événements (EventBus)
 
 **Critère d'acceptation** :
-- [ ] `AuditEvent` créé pour chaque mutation CRM
-- [ ] Filtrage par organisation_id, entity_type, entity_id
-- [ ] Compatibilité avec le EventBus
-- [ ] Tests pour l'audit CRM
+- [x] `AuditEvent` créé pour chaque mutation CRM
+- [x] Filtrage par organisation_id, entity_type, entity_id
+- [x] Compatibilité avec le EventBus
+- [x] Tests pour l'audit CRM
+
+**Résultat** :
+- Commit: `466b6f0` — feat(crm): add CRM audit module
+- Push: `466b6f0` — main publié
+- Tests: 344/344 OK
 
 **Estimation** : L
 

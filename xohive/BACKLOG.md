@@ -283,11 +283,16 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - `PipelineEngine` qui orchestre les transitions de stage
 
 **Critère d'acceptation** :
-- [ ] `PipelineDefinition` définit les stages et leurs séquences
-- [ ] `PipelineInstance` suit le stage courant
-- [ ] `PipelineEngine.transition()` valide et déclenche les hooks
-- [ ] Hooks (`on_stage_change`, `on_opportunity_close`)
-- [ ] Tests pour transitions et hooks
+- [x] `PipelineDefinition` définit les stages et leurs séquences
+- [x] `PipelineInstance` suit le stage courant
+- [x] `PipelineEngine.transition()` valide et déclenche les hooks
+- [x] Hooks (`on_stage_change`, `on_opportunity_close`)
+- [x] Tests pour transitions et hooks
+
+**Résultat** :
+- Commit: `f497b9e` — feat(crm): add Pipeline module and engine
+- Push: `f497b9e` — main publié
+- Tests: 318/318 OK
 
 **Estimation** : M
 

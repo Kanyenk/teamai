@@ -258,11 +258,16 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Description** : Créer l'entité `Opportunity` (id, company_id, contact_id, title, amount, stage, probability, close_date, is_active, created_by, created_at, updated_at) et son repository. Implémenter le pipeline d'états (prospecting → qualifier → proposition → négociation → fermé).
 
 **Critère d'acceptation** :
-- [ ] `Opportunity` avec les champs
-- [ ] `OpportunityRepository` CRUD
-- [ ] Machine à états du pipeline
-- [ ] Validation : amount > 0, stage dans l'ensemble des états
-- [ ] Tests pour CRUD et transitions
+- [x] `Opportunity` avec les champs
+- [x] `OpportunityRepository` CRUD
+- [x] Machine à états du pipeline
+- [x] Validation : amount > 0, stage dans l'ensemble des états
+- [x] Tests pour CRUD et transitions
+
+**Résultat** :
+- Commit: `13de5f5` — feat(crm): add Opportunity entity and repository
+- Push: `13de5f5` — main publié
+- Tests: 296/296 OK
 
 **Estimation** : M
 

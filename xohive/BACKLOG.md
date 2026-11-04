@@ -114,11 +114,16 @@
 **Description** : Créer l'entité `Document` (id, organisation_id, user_id, doc_type, numero_serie, status, etat, hash_etat, currency, retention, balance, created_by, created_at, updated_at) et son repository. Implémenter les règles métier de validation (doc_type : FACT/BC/BL/NC/RS/CHQ, numero série positif, currency 3 chars, balance ≥ 0, retention 0-1). Intégrer la machine à états (brouillon → brouillon_pdf → envoye → receive → en_cours → execute → ecrit → ferme/annule).
 
 **Critère d'acceptation** :
-- [ ] `Document` avec champs complets
-- [ ] `DocumentRepository` (SQLite persisté)
-- [ ] `DocumentStateMachine` valide les transitions
-- [ ] `DocumentValidator.validate_creation()` et `validate_transition()`
-- [ ] Tests pour validation, transitions, repository
+- [x] `Document` avec champs complets
+- [x] `DocumentRepository` (SQLite persisté)
+- [x] `DocumentStateMachine` valide les transitions
+- [x] `DocumentValidator.validate_creation()` et `validate_transition()`
+- [x] Tests pour validation, transitions, repository
+
+**Résultat** :
+- Commit: `64098bb` — feat(document): add Document entity and repository
+- Merge: `e01285e` — merge: integrate document into main
+- Tests: 205/205 OK
 
 **Estimation** : L
 

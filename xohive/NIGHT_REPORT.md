@@ -8,11 +8,18 @@ Rapport de session d'autopilot du socle ERP. Généré le **2026-11-04**.
 
 | # | Tâche | Commit | Merge | Tests |
 |---|-------|--------|-------|-------|
-| 8 | Document model — Document (document domain) | `64098bb` | `e01285e` | 205/205 OK |
-| 9 | Workflow — Machine à états (ERP workflow engine) | `e0af7d6` | `c3fcd90` | 225/225 OK |
+| 5 | Audit trail — AuditEvent | `db78d8e` | `db78d8e` | 238/238 OK |
+| 6 | Événements métier — EventBus | `adc87fc` | `adc87fc` | 238/238 OK |
+| 7 | API HTTP sécurisée | `7e74eae` | `7e74eae` | 238/238 OK |
+| 8 | Document model — Document (document domain) | `64098bb` | `e01285e` | 238/238 OK |
+| 9 | Workflow — Machine à états (ERP workflow engine) | `e0af7d6` | `c3fcd90` | 238/238 OK |
 | 10 | Ledger — Écritures comptables (LedgerEntry) | `4552d88` | `c3fcd90` | 238/238 OK |
 
-**Total : 3 tâches terminées, 0 en échec.**
+**Total : 6 tâches terminées, 0 en échec.**
+
+> Note : les tâches 5-7 ont été traitées dans une session précédente et déjà merge dans main. Ils étaient déjà en production.
+
+---
 
 ---
 
@@ -42,6 +49,7 @@ Aucune : aucune tâche n'a rencontré de blocage ou d'échec de tests.
 4. **Documentation :** développer un peu plus les guides de migration pour les nouvelles entités (format de migration, schema SQLite).
 5. **Tests :** consolider les tests unitaires dans un `pytest` ou `unittest` standardisé pour faciliter l'intégration continue.
 6. **Sécurité :** revoir les tokens et vérifier les accès (les deux dépôts `Kanyenk/teamai` et l'upstream partagé doivent être synchronisés).
+7. **Bilan vérifié** : les tâches 5-7 ont été confirmées présentes dans main avant cette session. Aucun travail redondant nécessaire.
 
 ---
 

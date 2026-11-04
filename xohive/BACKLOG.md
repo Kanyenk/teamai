@@ -69,11 +69,16 @@
 **Description** : Créer l'entité `AuditEvent` (id, user_id, organisation_id, entity_type, entity_id, action, old_values, new_values, ip_address, user_agent, timestamp) et son repository. Implémenter un hook intégré à `OrganizationRepository`, `UserRepository`, `RoleRepository` et `DocumentRepository`.
 
 **Critère d'acceptation** :
-- [ ] Chaque mutation crée un `AuditEvent` avec `old_values` et `new_values`
-- [ ] `AuditEventRepository.create()`, `list()`, `get()`
-- [ ] Filtres par `organisation_id`, `user_id`, `entity_type`, `entity_id`, `action`
-- [ ] Logs dans `data/audit.db` ou dans la même base SQLite
-- [ ] Tests couvrant la création, récupération et filtrage
+- [x] Chaque mutation crée un `AuditEvent` avec `old_values` et `new_values`
+- [x] `AuditEventRepository.create()`, `list()`, `get()`
+- [x] Filtres par `organisation_id`, `user_id`, `entity_type`, `entity_id`, `action`
+- [x] Logs dans `data/audit.db` ou dans la même base SQLite
+- [x] Tests couvrant la création, récupération et filtrage
+
+**Résultat** :
+- Commit: `0f1568d` — feat(audit): add AuditEvent entity and repository
+- Merge: `db78d8e` — merge: integrate audit-event into main
+- Tests: 238/238 OK
 
 **Estimation** : M
 
@@ -84,11 +89,16 @@
 **Description** : Créer le système d'événements (`EventBus`) avec `Event`, `EventType`, `EventSubscriber` et `EventHandler`. Implémenter des events pour `organization.created`, `organization.updated`, `user.created`, `user.deleted`, `role.updated`, `audit.created`.
 
 **Critère d'acceptation** :
-- [ ] `EventBus.publish(event)` diffuse à tous les subscribers
-- [ ] Support des `sync_handlers` et `async_handlers`
-- [ ] `event_bus.subscribe(event_type, handler)`
-- [ ] Tests pour publication et souscription
-- [ ] Live example: `organization.created` notifie les subscribers
+- [x] `EventBus.publish(event)` diffuse à tous les subscribers
+- [x] Support des `sync_handlers` et `async_handlers`
+- [x] `event_bus.subscribe(event_type, handler)`
+- [x] Tests pour publication et souscription
+- [x] Live example: `organization.created` notifie les subscribers
+
+**Résultat** :
+- Commit: `f444c89` — feat(events): add Event, EventBus modules
+- Merge: `adc87fc` — merge: integrate events into main
+- Tests: 238/238 OK
 
 **Estimation** : M
 
@@ -99,11 +109,16 @@
 **Description** : Créer les endpoints REST pour les entités du socle : `POST /api/v1/organizations`, `GET /api/v1/organizations`, `GET /api/v1/users`, `POST /api/v1/auth/login`, `GET /api/v1/roles`, `GET /api/v1/audit`. Validation des requêtes avec pydantic, auth Bearer token, pagination.
 
 **Critère d'acceptation** :
-- [ ] `POST /api/v1/auth/login` retourne `{access_token, token_type, expires_in, user: {...}}`
-- [ ] `GET /api/v1/organizations` liste paginée (limit, offset)
-- [ ] Tous les endpoints sauf `/health` et `/auth/login` exigent un token valide
-- [ ] Réponses cohérentes en JSON (succès ou `{error: {code, message, details}}`)
-- [ ] Tests via `unittest` (30+ tests)
+- [x] `POST /api/v1/auth/login` retourne `{access_token, token_type, expires_in, user: {...}}`
+- [x] `GET /api/v1/organizations` liste paginée (limit, offset)
+- [x] Tous les endpoints sauf `/health` et `/auth/login` exigent un token valide
+- [x] Réponses cohérentes en JSON (succès ou `{error: {code, message, details}}`)
+- [x] Tests via `unittest` (30+ tests)
+
+**Résultat** :
+- Commit: `7e74eae` — feat(api): add secure REST API for core entities
+- Merge: `c3fcd90` — merge: integrate api into main
+- Tests: 238/238 OK
 
 **Estimation** : L
 

@@ -134,11 +134,16 @@
 **Description** : Créer le module `Workflow` : `WorkflowDefinition` (id, name, state_schema: Dict[str, List[str]], transition_hooks), `WorkflowInstance` (id, workflow_id, current_state, metadata). Implémenter `WorkflowEngine` qui orchestre les transitions et appelle les hooks.
 
 **Critère d'acceptation** :
-- [ ] `WorkflowDefinition` définit le schéma des états et transitions
-- [ ] `WorkflowInstance` suit l'état courant parmi les états du schéma
-- [ ] `WorkflowEngine.transition(instance, new_state)` valide la transition et exécute les hooks
-- [ ] Hooks personnalisables (ex: `on_transition_to_ecrit`, `on_transition_to_ferme`)
-- [ ] Tests pour validation des transitions, déclenchement des hooks
+- [x] `WorkflowDefinition` définit le schéma des états et transitions
+- [x] `WorkflowInstance` suit l'état courant parmi les états du schéma
+- [x] `WorkflowEngine.transition(instance, new_state)` valide la transition et exécute les hooks
+- [x] Hooks personnalisables (ex: `on_transition_to_ecrit`, `on_transition_to_ferme`)
+- [x] Tests pour validation des transitions, déclenchement des hooks
+
+**Résultat** :
+- Commit: `e0af7d6` — feat(workflow): add workflow engine and state schema
+- Push: `e0af7d6` — main publié
+- Tests: 225/225 OK
 
 **Estimation** : M
 

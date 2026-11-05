@@ -191,6 +191,12 @@ class HttpHandler(BaseHTTPRequestHandler):
             from xohive.crm.repository.contact_repository import ContactRepository
             from xohive.crm.repository.opportunity_repository import OpportunityRepository
             from xohive.crm.repository.activity_repository import ActivityRepository
+            from xohive.crm.repository.quotation_repository import QuotationRepository
+            from xohive.crm.repository.order_repository import OrderRepository
+            from xohive.crm.repository.invoice_repository import InvoiceRepository
+            from xohive.crm.repository.credit_note_repository import CreditNoteRepository
+            from xohive.crm.repository.payment_repository import PaymentRepository
+            from xohive.crm.repository.reconciliation_repository import ReconciliationRepository
 
             segments = path.split("/")
             # Segments: ["", "api", "v1", "crm", "companies"] ou ["", "api", "v1", "crm", "companies", id]
@@ -477,6 +483,27 @@ class HttpHandler(BaseHTTPRequestHandler):
                     result = repo.create(contact)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 6 and segments[4] == "opportunities" and segments[6] == "pipeline":
+                opp_id = segments[5]
+                try:
+                    repo = OpportunityRepository(self.store)
+                    opp = repo.get(opp_id)
+                    repo.close()
+                    if opp:
+                        if body.get("stage") in opp.ALLOWED_STAGES:
+                            opp.stage = body["stage"]
+                            opp.updated_at = opp._now_iso()
+                            repo = OpportunityRepository(self.store)
+                            result = repo.update(opp)
+                            repo.close()
+                            self._send_json(200, {"stage": result.stage})
+                        else:
+                            self._send_error(400, f"stage invalide : {body.get('stage')}")
+                    else:
+                        self._send_error(404, "Opportunity not found")
                 except Exception as e:
                     self._send_error(400, str(e))
 

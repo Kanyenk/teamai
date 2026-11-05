@@ -402,38 +402,164 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 
 ---
 
+## 18. Ventes & Facturation — Devis (Quotation)
+
+**Description** : Créer l'entité `Quotation` pour le module Ventes & Facturation. Un devis est un document provisoire qui précède une commande.
+
+**Critère d'acceptation** :
+- [ ] `Quotation` avec champs : id, organisation_id, company_id, contact_id, user_id, reference, quotation_date, valid_until, total_amount, tax_rate, currency, status (draft, sent, accepted, rejected), is_active
+- [ ] `QuotationRepository` CRUD
+- [ ] Lien avec Organization, User, Party, Document
+- [ ] Règles métier : total_amount calcule automatiquement, valid_until > quotation_date
+- [ ] Tests pour CRUD et validation
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : L
+
+**Dépendances** : tâches 11, 12, 13 (CRM), 8 (Document), 7 (API)
+
+---
+
+## 19. Ventes & Facturation — Commande (Order)
+
+**Description** : Créer l'entité `Order` pour le module Ventes & Facturation. Une commande reprend les lignes d'un devis et les transforme en commande conforme.
+
+**Critère d'acceptation** :
+- [ ] `Order` avec champs : id, organisation_id, company_id, contact_id, user_id, quotation_id (lien N→1), order_date, delivery_date, shipping_method, total_amount, tax_rate, currency, status (pending, confirmed, shipped, delivered, cancelled), is_active
+- [ ] `OrderRepository` CRUD
+- [ ] Lien avec Quotation (via quotation_id)
+- [ ] Règles métier : total_amount = somme des lignes, taxes calculées
+- [ ] Tests pour CRUD et validation
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : M
+
+**Dépendances** : tâche 18 (Devis)
+
+---
+
+## 20. Ventes & Facturation — Facture (Invoice)
+
+**Description** : Créer l'entité `Invoice` pour le module Ventes & Facturation. Une facture est un document comptable conforme à la commande.
+
+**Critère d'acceptation** :
+- [ ] `Invoice` avec champs : id, organisation_id, company_id, contact_id, user_id, order_id (lien N→1), invoice_date, due_date, total_amount, tax_amount, status (draft, issued, paid, overdue, cancelled)
+- [ ] `InvoiceRepository` CRUD
+- [ ] Lien avec Order (via order_id)
+- [ ] Règles métier : tax_amount calculé, due_date > invoice_date
+- [ ] Génération automatique d'AuditEvent sur chaque mutation
+- [ ] Tests pour CRUD et validation
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : M
+
+**Dépendances** : tâche 19 (Commande), 10 (LedgerEntry)
+
+---
+
+## 21. Ventes & Facturation — Avoir (Credit Note)
+
+**Description** : Créer l'entité `CreditNote` pour le module Ventes & Facturation. Un avoir est un document de crédit qui annule ou réduit une facture.
+
+**Critère d'acceptation** :
+- [ ] `CreditNote` avec champs : id, organisation_id, company_id, contact_id, user_id, invoice_id (lien N→1), credit_amount, reason, status (draft, issued, applied, cancelled), is_active
+- [ ] `CreditNoteRepository` CRUD
+- [ ] Lien avec Invoice (via invoice_id)
+- [ ] Règles métier : credit_amount ≤ total_amount de la facture source
+- [ ] Test pour validation et calcul de crédit
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : M
+
+**Dépendances** : tâche 20 (Facture)
+
+---
+
+## 22. Ventes & Facturation — Paiement (Payment)
+
+**Description** : Créer l'entité `Payment` pour le module Ventes & Facturation. Un paiement enregistre la réception de fonds pour une facture.
+
+**Critère d'acceptation** :
+- [ ] `Payment` avec champs : id, organisation_id, company_id, contact_id, user_id, invoice_id (lien N→1), payment_method, amount, payment_date, status (pending, completed, failed), reference
+- [ ] `PaymentRepository` CRUD
+- [ ] Lien avec Invoice (via invoice_id)
+- [ ] Règles métier : amount ≤ total_amount de la facture, payment_date = now() si non spécifié
+- [ ] Tests pour CRUD et validation
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : S
+
+**Dépendances** : tâche 20 (Facture)
+
+---
+
+## 23. Ventes & Facturation — Rapprochement Bancaire (Reconciliation)
+
+**Description** : Créer le module de rapprochement bancaire pour le module Ventes & Facturation.
+
+**Critère d'acceptation** :
+- [ ] `Reconciliation` avec champs : id, organisation_id, company_id, account_id, payment_id (lien N→1), reference_bank, transaction_date, amount, status (pending, reconciled, unmatched)
+- [ ] `ReconciliationRepository` CRUD
+- [ ] Règles métier : audit de chaque opération, historique de rapprochement
+- [ ] Tests pour le module de rapprochement
+
+**Résultat** :
+- Non encore implémenté
+
+**Estimation** : L
+
+**Dépendances** : tâche 22 (Paiement), 10 (LedgerEntry)
+
+---
+
 ## Notes d'architecture
 
-- **Mise en œuvre** : créer le sous-module `xohive/crm/` avec les domaines, repositories et API.
+- **Module Ventes & Facturation** : crée le sous-module `xohive/sales/` avec les domaines, repositories et API.
 - **Arborescence suggérée** :
   ```
-  xohive/crm/
+  xohive/sales/
   ├── README.md
   ├── CHARTER.md
   ├── domain/
   │   ├── __init__.py
-  │   ├── company.py
-  │   ├── contact.py
-  │   ├── opportunity.py
-  │   ├── pipeline.py
-  │   └── activity.py
+  │   ├── quotation.py
+  │   ├── order.py
+  │   ├── invoice.py
+  │   ├── credit_note.py
+  │   ├── payment.py
+  │   └── reconciliation.py
   ├── repository/
   │   ├── __init__.py
-  │   ├── company_repository.py
-  │   ├── contact_repository.py
-  │   ├── opportunity_repository.py
-  │   ├── pipeline_repository.py
-  │   └── activity_repository.py
+  │   ├── quotation_repository.py
+  │   ├── order_repository.py
+  │   ├── invoice_repository.py
+  │   ├── credit_note_repository.py
+  │   ├── payment_repository.py
+  │   └── reconciliation_repository.py
   ├── api/
   │   ├── __init__.py
   │   └── v1/
   │       ├── __init__.py
-  │       ├── companies.py
-  │       ├── contacts.py
-  │       ├── opportunities.py
-  │       ├── pipeline.py
-  │       └── activities.py
+  │       ├── quotations.py
+  │       ├── orders.py
+  │       ├── invoices.py
+  │       ├── credit_notes.py
+  │       ├── payments.py
+  │       └── reconciliations.py
   └── tests/
-      └── test_crm.py
+      └── test_sales.py
   ```
 - **Validation** : lancer tous les tests (`.venv/bin/python -m unittest discover -s tests -v`) avant le commit.
+
+---
+*)ajout manuel de la recette CRM 2026-11-05*

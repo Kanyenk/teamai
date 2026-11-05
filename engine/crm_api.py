@@ -68,6 +68,11 @@ class CrmApiHandler(BaseHTTPRequestHandler):
     store = None
     auth = None
 
+    def __init__(self, *args, store=None, auth=None, **kwargs):
+        self.store = store
+        self.auth = auth
+        super().__init__(*args, **kwargs)
+
     def _send_json(self, status: int, data: Dict):
         body = json.dumps(data).encode("utf-8")
         self.send_response(status)

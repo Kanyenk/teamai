@@ -253,5 +253,217 @@ curl -s -H "Authorization: Bearer tok_123" http://localhost:8080/health
 
 | Variable | Description | Exemple |
 |---|---|---|
-| `TEAMAI_TOKENS` | Liste des tokens valides (séparés par `,`) | `tok_123,dev-token` |
-| `TEAMAI_DB_PATH` | Chemin vers la base SQLite | `/app/data/teamai.db` |
+|| `TEAMAI_TOKENS` | Liste des tokens valides (séparés par `,`) | `tok_123,dev-token` |
+|| `TEAMAI_DB_PATH` | Chemin vers la base SQLite | `/app/data/teamai.db` |
+
+---
+
+## 8. Module CRM — Endpoints CRM
+
+Documentation des routes REST pour le module CRM minimal.
+
+### Companies
+
+#### Lister les entreprises
+
+**GET** `/api/v1/crm/companies`
+
+**Réponse 200** : Liste des entreprises
+
+#### Créer une entreprise
+
+**POST** `/api/v1/crm/companies`
+
+**Corps de la requête (JSON)**
+```json
+{
+  "name": "Acme SARL",
+  "siret": "12345678901234",
+  "city": "Paris",
+  "zip_code": "75001",
+  "country": "FR",
+  "website": "https://acme.com",
+  "contact_person": "Jean Dupont",
+  "email": "contact@acme.com",
+  "organisation_id": "default-org"
+}
+```
+
+**Réponses** :
+| Code | Description |
+|------|-------------|
+| 201 | Entreprise créée avec succès |
+| 400 | Requête invalide |
+| 401 | Token absent ou invalide |
+| 500 | Erreur interne |
+
+---
+
+#### Récupérer une entreprise
+
+**GET** `/api/v1/crm/companies/{id}`
+
+---
+
+### Contacts
+
+#### Lister les contacts
+
+**GET** `/api/v1/crm/contacts`
+
+---
+
+#### Créer un contact
+
+**POST** `/api/v1/crm/contacts`
+
+**Corps de la requête (JSON)**
+```json
+{
+  "organisation_id": "default-org",
+  "company_id": "crm-756253312ee0",
+  "first_name": "Jean",
+  "last_name": "Dupont",
+  "email": "jean@acme.com",
+  "phone": "+33612345678",
+  "is_active": true
+}
+```
+
+---
+
+#### Récupérer un contact
+
+**GET** `/api/v1/crm/contacts/{id}`
+
+---
+
+### Opportunities
+
+#### Lister les opportunités
+
+**GET** `/api/v1/crm/opportunities`
+
+---
+
+#### Créer une opportunité
+
+**POST** `/api/v1/crm/opportunities`
+
+**Corps de la requête (JSON)**
+```json
+{
+  "organisation_id": "default-org",
+  "company_id": "crm-756253312ee0",
+  "title": "Demande de devis - Acme",
+  "amount": 15000.00,
+  "stage": "prospecting",
+  "probability": 30.0,
+  "close_date": "2026-12-31",
+  "is_active": true
+}
+```
+
+---
+
+#### Récupérer une opportunité
+
+**GET** `/api/v1/crm/opportunities/{id}`
+
+---
+
+### Pipeline
+
+#### Récupérer le pipeline
+
+**GET** `/api/v1/crm/pipeline/{company_id}`
+
+---
+
+### Activities
+
+#### Lister les activités
+
+**GET** `/api/v1/crm/activities`
+
+---
+
+#### Créer une activité
+
+**POST** `/api/v1/crm/activities`
+
+**Corps de la requête (JSON)**
+```json
+{
+  "organisation_id": "default-org",
+  "company_id": "crm-756253312ee0",
+  "contact_id": "crm-8111e1c64bfd",
+  "type": "appel",
+  "subject": "Appel prospectif",
+  "description": "Appel initial pour qualifier le prospect",
+  "date": "2026-10-01T09:00:00Z",
+  "status": "done",
+  "is_active": true
+}
+```
+
+---
+
+## Codes d'erreur
+
+|| Code | Description |
+|---|---|---|
+| 400 | Bad Request - Requête invalide |
+| 401 | Unauthorized - Token manquant ou invalide |
+| 404 | Not Found - Ressource introuvable |
+| 500 | Internal Server Error |
+
+---
+
+## Exemples de requêtes
+
+### Créer une entreprise
+
+```bash
+curl -X POST http://localhost:8081/api/v1/crm/companies \
+  -H "Authorization: Bearer tok_123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme SARL",
+    "siret": "12345678901234",
+    "city": "Paris",
+    "zip_code": "75001",
+    "country": "FR",
+    "website": "https://acme.com",
+    "contact_person": "Jean Dupont",
+    "email": "contact@acme.com",
+    "organisation_id": "default-org"
+  }'
+```
+
+### Lister les opportunités
+
+```bash
+curl -X GET http://localhost:8081/api/v1/crm/opportunities \
+  -H "Authorization: Bearer tok_123"
+```
+
+### Créer une activité
+
+```bash
+curl -X POST http://localhost:8081/api/v1/crm/activities \
+  -H "Authorization: Bearer tok_123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organisation_id": "default-org",
+    "company_id": "crm-756253312ee0",
+    "contact_id": "crm-8111e1c64bfd",
+    "type": "appel",
+    "subject": "Appel prospectif",
+    "description": "Appel initial pour qualifier le prospect",
+    "date": "2026-10-01T09:00:00Z",
+    "status": "done"
+  }'
+```
+
+---

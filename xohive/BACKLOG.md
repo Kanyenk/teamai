@@ -241,13 +241,13 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [x] Tests pour CRUD et validation
 
 **Résultat** :
-- Commit: `bebb082` — feat(crm): add Company entity and repository
-- Push: `bebb082` — main publié
-- Tests: 258/258 OK
+- Commit: `bef2e66` — feat(quote): add Quotation entity and repository
+- Push: `bef2e66` — main publié
+- Tests: 356/356 OK
 
-**Estimation** : M
+**Estimation** : L
 
-**Dépendances** : socle (tâches 1-4), Organisation
+**Dépendances** : tâches 2 (Organisation), 11 (Company), 12 (Contact), 3 (User)
 
 ---
 

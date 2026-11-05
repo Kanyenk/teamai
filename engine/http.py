@@ -19,6 +19,7 @@ Usage:
 
 import json
 import re
+import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from typing import Any, Dict
@@ -42,6 +43,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(body)
 
@@ -53,7 +55,12 @@ class HttpHandler(BaseHTTPRequestHandler):
         if length == 0:
             return {}
         raw = self.rfile.read(length)
-        return json.loads(raw.decode("utf-8"))
+        if not raw:
+            return {}
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return {}
 
     def _require_auth(self) -> bool:
         """Vérifie l'authentification sauf pour /health.
@@ -436,6 +443,38 @@ class HttpHandler(BaseHTTPRequestHandler):
                     reconciliations = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [r.to_dict() for r in reconciliations]})
+
+            elif len(segments) >= 5 and segments[4] == "bank-statements":
+                if self.store is None:
+                    self._send_error(500, "store not configured", "INTERNAL")
+                    return
+                from xohive.crm.repository.bank_statement_repository import BankStatementRepository
+                repo = BankStatementRepository(self.store.db_path)
+                try:
+                    # GET /api/v1/crm/bank-statements/{id}/matches
+                    if len(segments) >= 7 and segments[6] == "matches":
+                        statement_id = segments[5]
+                        stmt = repo.get(statement_id)
+                        if stmt is None:
+                            self._send_error(404, "Bank statement not found")
+                            return
+                        matches = repo.list_matches(statement_id, None)
+                        self._send_json(200, {"items": matches})
+                        return
+
+                    statement_id = segments[5] if len(segments) > 5 else None
+                    if statement_id:
+                        stmt = repo.get(statement_id)
+                        if stmt is None:
+                            self._send_error(404, "Bank statement not found")
+                            return
+                        self._send_json(200, {"item": stmt.to_dict()})
+                    else:
+                        statements = repo.list()
+                        self._send_json(200, {"items": [s.to_dict() for s in statements]})
+                finally:
+                    repo.close()
+
         except Exception as exc:
             self._send_error(500, str(exc))
 
@@ -586,6 +625,73 @@ class HttpHandler(BaseHTTPRequestHandler):
                     self._send_json(201, {"item": result.to_dict()})
                 except Exception as e:
                     self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "bank-statements" and segments[5] == "import":
+                try:
+                    from xohive.crm.domain.bank_statement import BankStatement
+                    from xohive.crm.repository.bank_statement_repository import BankStatementRepository
+                    statement_date = body.get("statement_date")
+                    file_name = body.get("file_name")
+                    amount = body.get("amount")
+                    reference = body.get("reference")
+                    if not all([statement_date, file_name is not None, amount is not None, reference is not None]):
+                        self._send_error(400, "Missing required fields")
+                        return
+                    bank_statement = BankStatement(
+                        organisation_id="org-test",
+                        company_id="crm-test",
+                        statement_date=statement_date,
+                        file_name=file_name,
+                        amount=amount,
+                        reference=reference,
+                        raw_data={"statement_date": statement_date, "file_name": file_name, "amount": amount, "reference": reference},
+                        status="pending",
+                    )
+                    repo = BankStatementRepository(self.store.db_path)
+                    result = repo.create(bank_statement)
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 7 and segments[4] == "bank-statements" and segments[6] == "reconcile":
+                from xohive.crm.repository.bank_statement_repository import BankStatementRepository
+                from xohive.crm.domain.reconciliation import Reconciliation
+                from xohive.crm.repository.reconciliation_repository import ReconciliationRepository
+                import uuid
+
+                statement_id = segments[5]
+                payment_id = body.get("payment_id") if body else None
+                if not payment_id:
+                    self._send_error(400, "payment_id required", "VALIDATION")
+                    return
+
+                repo = BankStatementRepository(self.store.db_path)
+                try:
+                    stmt = repo.get(statement_id)
+                    if stmt is None:
+                        self._send_error(404, "Bank statement not found")
+                        return
+                finally:
+                    repo.close()
+
+                reconciliation = Reconciliation(
+                    organisation_id=stmt.organisation_id,
+                    company_id=stmt.company_id,
+                    payment_id=payment_id,
+                    ledger_entry_id=uuid.uuid4().hex,
+                    bank_date=body.get("bank_date", ""),
+                    amount=float(body.get("amount", 0)),
+                    currency=body.get("currency", "EUR"),
+                    status="pending",
+                    reference=f"REC-{uuid.uuid4().hex[:8].upper()}",
+                )
+                recon_repo = ReconciliationRepository(self.store.db_path)
+                try:
+                    result = recon_repo.create(reconciliation)
+                finally:
+                    recon_repo.close()
+
+                self._send_json(201, {"item": result.to_dict()})
 
             else:
                 self._send_error(404, "Not Found")

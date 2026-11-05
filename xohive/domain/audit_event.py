@@ -42,8 +42,11 @@ class AuditEvent:
         new_values: dict | None = None,
         ip_address: str | None = None,
         user_agent: str | None = None,
+        payload: dict | None = None,
         created_at: str | None = None,
     ) -> None:
+        self.payload = payload
+
         if not organisation_id:
             raise ValueError("organisation_id est obligatoire")
         if not entity_type:

@@ -84,6 +84,9 @@ class HttpHandler(BaseHTTPRequestHandler):
         # Routes CRM
         if path.startswith("/api/v1/crm/"):
             return self._handle_crm_get(path)
+        # Routes WMS
+        if path.startswith("/api/v1/wms/"):
+            return self._handle_wms_get(path)
         # Routes Document
         if path == "/documents":
             self._list_documents()
@@ -103,6 +106,9 @@ class HttpHandler(BaseHTTPRequestHandler):
         # Routes CRM
         if path.startswith("/api/v1/crm/"):
             return self._handle_crm_post(path)
+        # Routes WMS
+        if path.startswith("/api/v1/wms/"):
+            return self._handle_wms_post(path)
         # Routes Document
         if path == "/documents":
             self._create_document()
@@ -113,6 +119,79 @@ class HttpHandler(BaseHTTPRequestHandler):
                 return
             else:
                 self._send_error(404, "Not Found")
+
+    def _handle_wms_get(self, path: str):
+        """Gère les requêtes GET pour l'API WMS."""
+        try:
+            from xohive.wms.repository.product_repository import ProductRepository
+            segments = [s for s in path.split("/") if s]
+            # segments = [api, v1, wms, products, (id)]
+            if len(segments) >= 4 and segments[3] == "products":
+                product_id = segments[4] if len(segments) > 4 else None
+                repo = ProductRepository(self.store.db_path)
+                try:
+                    if product_id:
+                        product = repo.get(product_id)
+                        if product is None:
+                            self._send_error(404, "Product not found")
+                            return
+                        self._send_json(200, {"item": product.to_dict()})
+                    else:
+                        products = repo.list()
+                        self._send_json(200, {"items": [p.to_dict() for p in products]})
+                finally:
+                    repo.close()
+            else:
+                self._send_error(404, "Not Found")
+        except Exception as exc:
+            self._send_error(500, str(exc))
+
+    def _handle_wms_post(self, path: str):
+        """Gère les requêtes POST pour l'API WMS."""
+        try:
+            from xohive.wms.repository.product_repository import ProductRepository
+            from xohive.wms.domain.product import Product
+            from xohive.crm.audit.audit_crm_repository import AuditCRMRepository
+            from xohive.domain.audit_event import AuditEvent
+            import uuid
+
+            body = self._read_body()
+            segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "products":
+                product = Product(
+                    organisation_id=body.get("organisation_id", ""),
+                    sku=body.get("sku", ""),
+                    name=body.get("name", ""),
+                    description=body.get("description", ""),
+                    unit=body.get("unit", "unit"),
+                    category=body.get("category", ""),
+                    default_price=float(body.get("default_price", 0)),
+                )
+                repo = ProductRepository(self.store.db_path)
+                try:
+                    result = repo.create(product)
+                finally:
+                    repo.close()
+
+                audit_repo = AuditCRMRepository(self.store.db_path)
+                try:
+                    audit_repo.create(AuditEvent(
+                        id=uuid.uuid4().hex,
+                        organisation_id=result.organisation_id,
+                        entity_type="product",
+                        entity_id=result.id,
+                        action="create",
+                        old_values=None,
+                        new_values={"id": result.id, "sku": result.sku},
+                    ))
+                finally:
+                    audit_repo.close()
+
+                self._send_json(201, {"item": result.to_dict()})
+            else:
+                self._send_error(404, "Not Found")
+        except Exception as exc:
+            self._send_error(400, str(exc))
 
     def _list_documents(self):
         try:

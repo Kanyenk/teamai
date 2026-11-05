@@ -505,7 +505,7 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Résultat** :
 - Commit: `c0dddfa` — feat(payment): add Payment entity and repository
 - Push: `c0dddfa` — main publié
-- Tests: 404/404 OK
+- Tests: 415/415 OK
 
 **Estimation** : M
 
@@ -514,6 +514,30 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 ---
 
 ## 23. Ventes & Facturation — Rapprochement Bancaire (Reconciliation)
+
+**Description** : Créer l'entité `Reconciliation` pour le rapprochement bancaire. Un rapprochement lie un paiement (Payment) à une entrée du livret de caisse (LedgerEntry).
+
+**Critère d'acceptation** :
+- [x] `Reconciliation` avec champs : id, organisation_id, company_id, contact_id, user_id, payment_id (lien N→1), ledger_entry_id (lien N→1), bank_date, amount, currency, status (open, pending, closed), reference
+- [x] `ReconciliationRepository` CRUD
+- [x] Lien avec Payment et LedgerEntry
+- [x] Validation de référence unique (reference)
+- [x] Règles métier : amount ≥ 0, currency 3 caractères
+- [x] Génération automatique d'AuditEvent sur chaque mutation
+- [x] Tests pour CRUD et validation
+
+**Résultat** :
+- Commit: `1f3f503` — feat(reconciliation): add Reconciliation entity and repository
+- Push: `1f3f503` — main publié
+- Tests: 415/415 OK
+
+**Estimation** : M
+
+**Dépendances** : tâches 22 (Paiement), 10 (LedgerEntry)
+
+---
+
+## Résumé des tâches Ventes & Facturation
 
 **Description** : Créer le module de rapprochement bancaire pour le module Ventes & Facturation.
 

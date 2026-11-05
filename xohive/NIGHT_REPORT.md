@@ -71,7 +71,35 @@ Tous les modules CRM (11-17) ont leurs dépendances du socle (tâches 1-10) vér
 | Task 11 (Company) | socle (1-4) | ✓ |
 | Task 12 (Contact) | tasks 1-4, 11 | ✓ |
 | Task 13 (Opportunity) | tasks 1-4, 11, 12 | ✓ |
-| Task 14 (Pipeline) | tasks 1-4, 13 | ✓ |
+|| Task 14 (Pipeline) | tasks 1-4, 13 | ✓ |
+|| Task 15 (Activity) | tasks 1-4, 11, 12, 3 | ✓ |
+|| Task 16 (API REST) | tasks 1-4, 11-15, 7 | ✓ |
+|| Task 17 (Audit CRM) | tasks 1-4, 11-15, 5, 6 | ✓ |
+
+---
+
+## Pipeline CRM — Complété (2026-11-05)
+
+Succès de l'implémentation du module Pipeline CRM :
+
+**Entités ajoutées** :
+- `PipelineDefinition` : définition du pipeline avec stages (prospecting → qualification → proposal → negation → won/lost)
+- `PipelineInstance` : instance en cours d'exécution avec progression, métadonnées, stage
+- `PipelineEngine` : moteur d'orchestration des transitions et hooks
+- `PipelineProgression` : gestion de la progression d'une opportunité
+
+**Méthodes clés** :
+- `start_opportunity()` : démarre une opportunité dans le pipeline
+- `advance_opportunity()` : avance l'opportunité d'un stage vers le suivant
+- `get_progress()` : retourne l'état de progression (pourcentage, stage actuel, stages suivants)
+
+**Tests** :
+- Nouveaux tests dans `tests/test_pipeline.py` pour la progression
+- Total : 344 tests, tous passés (OK)
+
+**Commit** : `fa60832`
+**Merge** : `bc94afa`
+**Push** : `fa60832..bc94afa`
 | Task 15 (Activity) | tasks 1-4, 11, 12, 3 | ✓ |
 | Task 16 (API REST) | tasks 1-4, 11-15, 7 | ✓ |
 | Task 17 (Audit CRM) | tasks 1-4, 11-15, 5, 6 | ✓ |

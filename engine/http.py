@@ -74,6 +74,10 @@ class HttpHandler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         path = self.path.rstrip("/") or "/documents"
+        # Routes CRM
+        if path.startswith("/api/v1/crm/"):
+            return self._handle_crm_get(path)
+        # Routes Document
         if path == "/documents":
             self._list_documents()
         elif path == "/health":
@@ -89,12 +93,17 @@ class HttpHandler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         path = self.path.rstrip("/") or "/documents"
+        # Routes CRM
+        if path.startswith("/api/v1/crm/"):
+            return self._handle_crm_post(path)
+        # Routes Document
         if path == "/documents":
             self._create_document()
         else:
             match = re.match(r"^/documents/([^/]+)/transition$", path)
             if match:
                 self._transition_document(match.group(1))
+                return
             else:
                 self._send_error(404, "Not Found")
 
@@ -174,6 +183,192 @@ class HttpHandler(BaseHTTPRequestHandler):
             self._send_error(400, str(exc))
         except Exception as exc:
             self._send_error(500, str(exc))
+
+    def _handle_crm_get(self, path: str):
+        """Gère les requêtes GET pour l'API CRM."""
+        try:
+            from xohive.crm.repository.company_repository import CompanyRepository
+            from xohive.crm.repository.contact_repository import ContactRepository
+            from xohive.crm.repository.opportunity_repository import OpportunityRepository
+            from xohive.crm.repository.activity_repository import ActivityRepository
+
+            segments = path.split("/")
+            # Segments: ["", "api", "v1", "crm", "companies"] ou ["", "api", "v1", "crm", "companies", id]
+
+            if len(segments) >= 5 and segments[4] == "companies":
+                company_id = segments[5] if len(segments) > 5 else None
+                if company_id:
+                    repo = CompanyRepository(self.store)
+                    company = repo.get(company_id)
+                    if company:
+                        self._send_json(200, {"item": {
+                            "id": company.id,
+                            "name": company.name,
+                            "siret": company.siret,
+                            "city": company.city,
+                            "zip_code": company.zip_code,
+                            "country": company.country,
+                            "website": company.website,
+                            "contact_person": company.contact_person,
+                            "email": company.email,
+                            "is_active": company.is_active
+                        }})
+                    else:
+                        self._send_error(404, "Company not found")
+                else:
+                    repo = CompanyRepository(self.store)
+                    companies = repo.list()
+                    self._send_json(200, {"items": [{
+                        "id": c.id, "name": c.name, "siret": c.siret,
+                        "city": c.city, "zip_code": c.zip_code, "country": c.country,
+                        "is_active": c.is_active
+                    } for c in companies]})
+
+            elif len(segments) >= 5 and segments[4] == "contacts":
+                contact_id = segments[5] if len(segments) > 5 else None
+                if contact_id:
+                    repo = ContactRepository(self.store)
+                    contact = repo.get(contact_id)
+                    if contact:
+                        self._send_json(200, {"item": {
+                            "id": contact.id,
+                            "first_name": contact.first_name,
+                            "last_name": contact.last_name,
+                            "email": contact.email,
+                            "phone": contact.phone,
+                            "company_id": contact.company_id,
+                            "is_active": contact.is_active
+                        }})
+                    else:
+                        self._send_error(404, "Contact not found")
+                else:
+                    repo = ContactRepository(self.store)
+                    contacts = repo.list()
+                    self._send_json(200, {"items": [{
+                        "id": c.id, "first_name": c.first_name, "last_name": c.last_name,
+                        "email": c.email, "phone": c.phone, "company_id": c.company_id,
+                        "is_active": c.is_active
+                    } for c in contacts]})
+
+            elif len(segments) >= 5 and segments[4] == "opportunities":
+                opp_id = segments[5] if len(segments) > 5 else None
+                if opp_id:
+                    repo = OpportunityRepository(self.store)
+                    opp = repo.get(opp_id)
+                    if opp:
+                        self._send_json(200, {"item": {
+                            "id": opp.id,
+                            "title": opp.title,
+                            "company_id": opp.company_id,
+                            "amount": opp.amount,
+                            "stage": opp.stage,
+                            "probability": opp.probability,
+                            "close_date": opp.close_date,
+                            "is_active": opp.is_active
+                        }})
+                    else:
+                        self._send_error(404, "Opportunity not found")
+                else:
+                    repo = OpportunityRepository(self.store)
+                    opps = repo.list()
+                    self._send_json(200, {"items": [{
+                        "id": o.id, "title": o.title, "amount": o.amount,
+                        "stage": o.stage, "probability": o.probability,
+                        "company_id": o.company_id, "is_active": o.is_active
+                    } for o in opps]})
+
+            elif len(segments) >= 5 and segments[4] == "activities":
+                activity_id = segments[5] if len(segments) > 5 else None
+                if activity_id:
+                    repo = ActivityRepository(self.store)
+                    activity = repo.get(activity_id)
+                    if activity:
+                        self._send_json(200, {"item": {
+                            "id": activity.id,
+                            "type": activity.type,
+                            "status": activity.status,
+                            "date": activity.date,
+                            "subject": activity.subject,
+                            "description": activity.description,
+                            "contact_id": activity.contact_id,
+                            "company_id": activity.company_id,
+                            "is_active": activity.is_active
+                        }})
+                    else:
+                        self._send_error(404, "Activity not found")
+                else:
+                    repo = ActivityRepository(self.store)
+                    activities = repo.list()
+                    self._send_json(200, {"items": [{
+                        "id": a.id, "type": a.type, "status": a.status,
+                        "date": a.date, "company_id": a.company_id,
+                        "is_active": a.is_active
+                    } for a in activities]})
+
+            else:
+                self._send_error(404, "Not Found")
+        except Exception as exc:
+            self._send_error(500, str(exc))
+
+    def _handle_crm_post(self, path: str):
+        """Gère les requêtes POST pour l'API CRM."""
+        try:
+            from xohive.crm.repository.company_repository import CompanyRepository
+            from xohive.crm.repository.contact_repository import ContactRepository
+            from xohive.crm.repository.opportunity_repository import OpportunityRepository
+            from xohive.crm.repository.activity_repository import ActivityRepository
+            from xohive.crm.domain.company import Company
+            from xohive.crm.domain.contact import Contact
+            from xohive.crm.domain.opportunity import Opportunity
+            from xohive.crm.domain.activity import Activity
+
+            segments = path.split("/")
+            body = self._read_body()
+
+            if len(segments) >= 5 and segments[4] == "companies":
+                try:
+                    company = Company(**body)
+                    repo = CompanyRepository(self.store)
+                    result = repo.create(company)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "contacts":
+                try:
+                    contact = Contact(**body)
+                    repo = ContactRepository(self.store)
+                    result = repo.create(contact)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "opportunities":
+                try:
+                    opp = Opportunity(**body)
+                    repo = OpportunityRepository(self.store)
+                    result = repo.create(opp)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "activities":
+                try:
+                    activity = Activity(**body)
+                    repo = ActivityRepository(self.store)
+                    result = repo.create(activity)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            else:
+                self._send_error(404, "Not Found")
+        except Exception as exc:
+            self._send_error(400, str(exc))
 
     def _doc_to_dict(self, doc: Any) -> Dict:
         return {

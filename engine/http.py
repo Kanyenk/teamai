@@ -305,8 +305,131 @@ class HttpHandler(BaseHTTPRequestHandler):
                         "is_active": a.is_active
                     } for a in activities]})
 
-            else:
-                self._send_error(404, "Not Found")
+            elif len(segments) >= 5 and segments[4] == "pipeline":
+                company_id = segments[5] if len(segments) > 5 else None
+                if company_id:
+                    repo = OpportunityRepository(self.store)
+                    opps = repo.list()
+                    repo.close()
+                    active = [o for o in opps if o.company_id == company_id]
+                    stages = {}
+                    for o in active:
+                        if o.company_id not in stages:
+                            stages[o.company_id] = {"count": 0, "stage": o.stage}
+                        stages[o.company_id]["count"] += 1
+                    self._send_json(200, {
+                        "company_id": company_id,
+                        "pipeline_stage": stages.get(company_id, {}).get("stage", "prospecting"),
+                        "opportunities_count": stages.get(company_id, {}).get("count", 0),
+                        "items": [{"id": o.id, "title": o.title, "stage": o.stage, "amount": o.amount}
+                                  for o in active]
+                    })
+                else:
+                    repo = OpportunityRepository(self.store)
+                    opps = repo.list()
+                    repo.close()
+                    self._send_json(200, {
+                        "pipeline_stage": "prospecting",
+                        "opportunities_count": len(opps),
+                        "items": [{"id": o.id, "title": o.title, "stage": o.stage, "amount": o.amount}
+                                  for o in opps]
+                    })
+
+            elif len(segments) >= 5 and segments[4] == "quotations":
+                quote_id = segments[5] if len(segments) > 5 else None
+                if quote_id:
+                    repo = QuotationRepository(self.store)
+                    quote = repo.get(quote_id)
+                    repo.close()
+                    if quote:
+                        self._send_json(200, {"item": quote.to_dict()})
+                    else:
+                        self._send_error(404, "Quotation not found")
+                else:
+                    repo = QuotationRepository(self.store)
+                    quotes = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [q.to_dict() for q in quotes]})
+
+            elif len(segments) >= 5 and segments[4] == "orders":
+                order_id = segments[5] if len(segments) > 5 else None
+                if order_id:
+                    repo = OrderRepository(self.store)
+                    order = repo.get(order_id)
+                    repo.close()
+                    if order:
+                        self._send_json(200, {"item": order.to_dict()})
+                    else:
+                        self._send_error(404, "Order not found")
+                else:
+                    repo = OrderRepository(self.store)
+                    orders = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [o.to_dict() for o in orders]})
+
+            elif len(segments) >= 5 and segments[4] == "invoices":
+                invoice_id = segments[5] if len(segments) > 5 else None
+                if invoice_id:
+                    repo = InvoiceRepository(self.store)
+                    invoice = repo.get(invoice_id)
+                    repo.close()
+                    if invoice:
+                        self._send_json(200, {"item": invoice.to_dict()})
+                    else:
+                        self._send_error(404, "Invoice not found")
+                else:
+                    repo = InvoiceRepository(self.store)
+                    invoices = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [i.to_dict() for i in invoices]})
+
+            elif len(segments) >= 5 and segments[4] == "credit-notes":
+                credit_note_id = segments[5] if len(segments) > 5 else None
+                if credit_note_id:
+                    repo = CreditNoteRepository(self.store)
+                    credit_note = repo.get(credit_note_id)
+                    repo.close()
+                    if credit_note:
+                        self._send_json(200, {"item": credit_note.to_dict()})
+                    else:
+                        self._send_error(404, "CreditNote not found")
+                else:
+                    repo = CreditNoteRepository(self.store)
+                    credit_notes = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [c.to_dict() for c in credit_notes]})
+
+            elif len(segments) >= 5 and segments[4] == "payments":
+                payment_id = segments[5] if len(segments) > 5 else None
+                if payment_id:
+                    repo = PaymentRepository(self.store)
+                    payment = repo.get(payment_id)
+                    repo.close()
+                    if payment:
+                        self._send_json(200, {"item": payment.to_dict()})
+                    else:
+                        self._send_error(404, "Payment not found")
+                else:
+                    repo = PaymentRepository(self.store)
+                    payments = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [p.to_dict() for p in payments]})
+
+            elif len(segments) >= 5 and segments[4] == "reconciliations":
+                reconciliation_id = segments[5] if len(segments) > 5 else None
+                if reconciliation_id:
+                    repo = ReconciliationRepository(self.store)
+                    reconciliation = repo.get(reconciliation_id)
+                    repo.close()
+                    if reconciliation:
+                        self._send_json(200, {"item": reconciliation.to_dict()})
+                    else:
+                        self._send_error(404, "Reconciliation not found")
+                else:
+                    repo = ReconciliationRepository(self.store)
+                    reconciliations = repo.list()
+                    repo.close()
+                    self._send_json(200, {"items": [r.to_dict() for r in reconciliations]})
         except Exception as exc:
             self._send_error(500, str(exc))
 
@@ -317,10 +440,22 @@ class HttpHandler(BaseHTTPRequestHandler):
             from xohive.crm.repository.contact_repository import ContactRepository
             from xohive.crm.repository.opportunity_repository import OpportunityRepository
             from xohive.crm.repository.activity_repository import ActivityRepository
+            from xohive.crm.repository.quotation_repository import QuotationRepository
+            from xohive.crm.repository.order_repository import OrderRepository
+            from xohive.crm.repository.invoice_repository import InvoiceRepository
+            from xohive.crm.repository.credit_note_repository import CreditNoteRepository
+            from xohive.crm.repository.payment_repository import PaymentRepository
+            from xohive.crm.repository.reconciliation_repository import ReconciliationRepository
             from xohive.crm.domain.company import Company
             from xohive.crm.domain.contact import Contact
             from xohive.crm.domain.opportunity import Opportunity
             from xohive.crm.domain.activity import Activity
+            from xohive.crm.domain.quotation import Quotation
+            from xohive.crm.domain.order import Order
+            from xohive.crm.domain.invoice import Invoice
+            from xohive.crm.domain.credit_note import CreditNote
+            from xohive.crm.domain.payment import Payment
+            from xohive.crm.domain.reconciliation import Reconciliation
 
             segments = path.split("/")
             body = self._read_body()
@@ -360,6 +495,66 @@ class HttpHandler(BaseHTTPRequestHandler):
                     activity = Activity(**body)
                     repo = ActivityRepository(self.store)
                     result = repo.create(activity)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "quotations":
+                try:
+                    quote = Quotation(**body)
+                    repo = QuotationRepository(self.store)
+                    result = repo.create(quote)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "orders":
+                try:
+                    order = Order(**body)
+                    repo = OrderRepository(self.store)
+                    result = repo.create(order)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "invoices":
+                try:
+                    invoice = Invoice(**body)
+                    repo = InvoiceRepository(self.store)
+                    result = repo.create(invoice)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "credit-notes":
+                try:
+                    credit_note = CreditNote(**body)
+                    repo = CreditNoteRepository(self.store)
+                    result = repo.create(credit_note)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "payments":
+                try:
+                    payment = Payment(**body)
+                    repo = PaymentRepository(self.store)
+                    result = repo.create(payment)
+                    repo.close()
+                    self._send_json(201, {"item": result.to_dict()})
+                except Exception as e:
+                    self._send_error(400, str(e))
+
+            elif len(segments) >= 5 and segments[4] == "reconciliations":
+                try:
+                    reconciliation = Reconciliation(**body)
+                    repo = ReconciliationRepository(self.store)
+                    result = repo.create(reconciliation)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
                 except Exception as e:

@@ -220,3 +220,74 @@ Toutes les entités génèrent des événements d'audit lors de leurs opération
 - feature/payment → main (c0dddfa)
 - feature/reconciliation → main (1f3f503)
 *)ajout manuel de la recette CRM 2026-11-05*
+
+---
+
+## Recette Manuelle CRM - 5 novembre 2026
+
+### Résultats de la recette fonctionnelle bout en bout
+
+#### Étape 1 : Démarrage du service ✅
+- Server: `engine/http.py --port 8081 --db data/teamai_crm.db`
+- Health: `{"status": "ok"}` ✅
+- Auth: Token Bearer (tok_123, dev-token) ✅
+
+#### Étape 2 : Création d'entités de base ✅
+| Entité | ID | Statut |
+|--------|-----|--------|
+| Organisation | org-001 | (idélectif via organisation_id) |
+| Entreprise | crm-e76c79070423 | ✅ Acme Corporation |
+| Contact | crm-8ccb72c56cde | ✅ Marie Durand |
+
+#### Étape 3 : Création d'opportunité ✅
+| Entité | ID | Statut |
+|--------|-----|--------|
+| Opportunité | crm-52cfc49cc79b | ✅ stage=prospecting, amount=25000.00 |
+
+#### Étape 4 : Progression du pipeline ⚠️
+```
+GET /api/v1/crm/pipeline/{company_id}  →  404 Not Found
+```
+**Point à corriger** : L'endpoint GET /pipeline/{company_id} n'est pas implémenté dans le routeur `engine/http.py`. L'implémentation existe dans `engine/crm_api.py` mais n'est pas exposée par le serveur HTTP. À corriger en ajoutant le routeur pipeline dans `_handle_crm_get`.
+
+#### Étape 5 : Création Devis → Commande → Facture ⚠️
+```
+POST /api/v1/crm/quotation        →  404 Not Found
+POST /api/v1/crm/order            →  404 Not Found
+POST /api/v1/crm/invoice          →  404 Not Found
+```
+**Points à corriger** : Les entités Quotation, Order, Invoice, Payment et Reconciliation ne sont pas servies par les endpoints HTTP. Ajouter les routes correspondantes dans `_handle_crm_get` et `_handle_crm_post` de `engine/http.py`.
+
+#### Étape 6 : Vérification des événements d'audit ✅
+| Entité | Action | ID | Timestamp |
+|--------|--------|-----|-----------|
+| company | create | crm-756253312ee0 | 2026-11-05 00:55:06 |
+| contact | create | crm-8111e1c64bfd | 2026-11-05 00:55:06 |
+| opportunity | create | crm-fe5bbb779248 | 2026-11-05 00:55:06 |
+| activity | create | crm-ccfb9444a5c4 | 2026-11-05 00:55:06 |
+
+**Nouveaux events** : 0 (l'audit n'est pas automatiquement déclenché par les routes HTTP CRM)
+
+#### Étape 7 : Paiements et écritures comptables ⚠️
+```
+Lien avec LedgerEntry : Non implémenté dans HTTP server
+```
+**Point à corriger** : Les paiements (Payment) ne génèrent pas automatiquement des écritures LedgerEntry dans le système HTTP actuel.
+
+#### Synthèse des 501/404 rencontrés
+| Endpoint | Méthode | Code | Message |
+|----------|---------|------|---------|
+| /pipeline/{company_id} | GET | 404 | Not Found |
+| /quotation | GET | 404 | Not Found |
+| /order | GET | 404 | Not Found |
+| /invoice | GET | 404 | Not Found |
+| /payment | GET | 404 | Not Found |
+| /reconciliation | GET | 404 | Not Found |
+| /api/v1/crm/quotation | POST | 404 | Not Found |
+| /api/v1/crm/order | POST | 404 | Not Found |
+| /api/v1/crm/invoice | POST | 404 | Not Found |
+| /api/v1/crm/payment | POST | 404 | Not Found |
+| /api/v1/crm/reconciliation | POST | 404 | Not Found |
+
+**Remarque** : Ces endpoints existent dans le domain model et les repositories, mais ne sont pas exposés par le serveur HTTP. À corriger pour accomplir la recette complète.
+

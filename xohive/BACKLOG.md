@@ -503,11 +503,13 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [ ] Tests pour CRUD et validation
 
 **Résultat** :
-- Non encore implémenté
+- Commit: `c0dddfa` — feat(payment): add Payment entity and repository
+- Push: `c0dddfa` — main publié
+- Tests: 404/404 OK
 
-**Estimation** : S
+**Estimation** : M
 
-**Dépendances** : tâche 20 (Facture)
+**Dépendances** : tâche 21 (Avoir)
 
 ---
 

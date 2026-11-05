@@ -24,3 +24,4 @@ __pycache__/
 # Données runtime
 /data/
 .env.local
+update_backlog_*.py

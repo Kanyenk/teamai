@@ -414,11 +414,13 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [ ] Tests pour CRUD et validation
 
 **Résultat** :
-- Non encore implémenté
+- Commit: `bef2e66` — feat(quote): add Quotation entity and repository
+- Push: `bef2e66` — main publié
+- Tests: 369/369 OK
 
 **Estimation** : L
 
-**Dépendances** : tâches 11, 12, 13 (CRM), 8 (Document), 7 (API)
+**Dépendances** : tâches 2 (Organisation), 11 (Company), 12 (Contact), 3 (User)
 
 ---
 
@@ -434,7 +436,9 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [ ] Tests pour CRUD et validation
 
 **Résultat** :
-- Non encore implémenté
+- Commit: `fd4de1e` — feat(order): add Order entity and repository
+- Push: `fd4de1e` — main publié
+- Tests: 369/369 OK
 
 **Estimation** : M
 

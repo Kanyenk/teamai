@@ -25,3 +25,4 @@ __pycache__/
 /data/
 .env.local
 update_backlog_*.py
+tests/disabled/

@@ -141,6 +141,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {"items": [p.to_dict() for p in products]})
                 finally:
                     repo.close()
+            if len(segments) >= 4 and segments[3] == "warehouses":
+                from xohive.wms.repository.warehouse_repository import WarehouseRepository
+                warehouse_id = segments[4] if len(segments) > 4 else None
+                repo = WarehouseRepository(self.store.db_path)
+                try:
+                    if warehouse_id:
+                        warehouse = repo.get_by_id(warehouse_id)
+                        if warehouse is None:
+                            self._send_error(404, "Warehouse not found")
+                            return
+                        self._send_json(200, {"item": warehouse.to_dict()})
+                    else:
+                        warehouses = repo.list()
+                        self._send_json(200, {"items": [w.to_dict() for w in warehouses]})
+                finally:
+                    repo.close()
             else:
                 self._send_error(404, "Not Found")
         except Exception as exc:
@@ -183,6 +199,37 @@ class HttpHandler(BaseHTTPRequestHandler):
                         action="create",
                         old_values=None,
                         new_values={"id": result.id, "sku": result.sku},
+                    ))
+                finally:
+                    audit_repo.close()
+
+                self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "warehouses":
+                from xohive.wms.repository.warehouse_repository import WarehouseRepository
+                from xohive.wms.domain.warehouse import Warehouse
+                warehouse = Warehouse(
+                    organisation_id=body.get("organisation_id", ""),
+                    code=body.get("code", ""),
+                    name=body.get("name", ""),
+                    address=body.get("address"),
+                    is_active=bool(body.get("is_active", True)),
+                )
+                repo = WarehouseRepository(self.store.db_path)
+                try:
+                    result = repo.create(warehouse)
+                finally:
+                    repo.close()
+
+                audit_repo = AuditCRMRepository(self.store.db_path)
+                try:
+                    audit_repo.create(AuditEvent(
+                        id=uuid.uuid4().hex,
+                        organisation_id=result.organisation_id,
+                        entity_type="warehouse",
+                        entity_id=result.id,
+                        action="create",
+                        old_values=None,
+                        new_values={"id": result.id, "code": result.code},
                     ))
                 finally:
                     audit_repo.close()

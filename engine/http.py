@@ -141,6 +141,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {"items": [p.to_dict() for p in products]})
                 finally:
                     repo.close()
+            if len(segments) >= 4 and segments[3] == "stock-levels":
+                from xohive.wms.repository.stock_level_repository import StockLevelRepository
+                level_id = segments[4] if len(segments) > 4 else None
+                repo = StockLevelRepository(self.store.db_path)
+                try:
+                    if level_id:
+                        level = repo.get_by_id(level_id)
+                        if level is None:
+                            self._send_error(404, "StockLevel not found")
+                            return
+                        self._send_json(200, {"item": level.to_dict()})
+                    else:
+                        levels = repo.list()
+                        self._send_json(200, {"items": [l.to_dict() for l in levels]})
+                finally:
+                    repo.close()
             if len(segments) >= 4 and segments[3] == "warehouses":
                 from xohive.wms.repository.warehouse_repository import WarehouseRepository
                 warehouse_id = segments[4] if len(segments) > 4 else None
@@ -199,6 +215,41 @@ class HttpHandler(BaseHTTPRequestHandler):
                         action="create",
                         old_values=None,
                         new_values={"id": result.id, "sku": result.sku},
+                    ))
+                finally:
+                    audit_repo.close()
+
+                self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "stock-levels":
+                from xohive.wms.repository.stock_level_repository import StockLevelRepository
+                from xohive.wms.domain.stock_level import StockLevel
+                level = StockLevel(
+                    organisation_id=body.get("organisation_id", ""),
+                    product_id=body.get("product_id", ""),
+                    warehouse_id=body.get("warehouse_id", ""),
+                    quantity=int(body.get("quantity", 0)),
+                )
+                repo = StockLevelRepository(self.store.db_path)
+                try:
+                    result = repo.create(level)
+                finally:
+                    repo.close()
+
+                audit_repo = AuditCRMRepository(self.store.db_path)
+                try:
+                    audit_repo.create(AuditEvent(
+                        id=uuid.uuid4().hex,
+                        organisation_id=result.organisation_id,
+                        entity_type="stock_level",
+                        entity_id=result.id,
+                        action="create",
+                        old_values=None,
+                        new_values={
+                            "id": result.id,
+                            "product_id": result.product_id,
+                            "warehouse_id": result.warehouse_id,
+                            "quantity": result.quantity,
+                        },
                     ))
                 finally:
                     audit_repo.close()

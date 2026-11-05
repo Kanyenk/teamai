@@ -481,7 +481,9 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [ ] Test pour validation et calcul de crédit
 
 **Résultat** :
-- Non encore implémenté
+- Commit: `98f2a97` — feat(credit-note): add CreditNote entity and repository
+- Push: `98f2a97` — main publié
+- Tests: 392/392 OK
 
 **Estimation** : M
 

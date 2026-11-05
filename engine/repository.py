@@ -29,7 +29,11 @@ class DocumentRepository:
 
     def __init__(self, db_path: str | Path):
         if not isinstance(db_path, (str, Path)):
-            raise TypeError(f"db_path must be str or Path, got {type(db_path).__name__}")
+            import traceback
+            raise TypeError(
+                f"db_path must be str or Path, got {type(db_path).__name__}\n"
+                f"Call site:\n{''.join(traceback.format_stack())}"
+            )
         self.db_path = str(db_path)
         self._connect()
 

@@ -416,7 +416,7 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 **Résultat** :
 - Commit: `bef2e66` — feat(quote): add Quotation entity and repository
 - Push: `bef2e66` — main publié
-- Tests: 369/369 OK
+- Tests: 381/381 OK
 
 **Estimation** : L
 
@@ -459,11 +459,13 @@ Module CRM minimal : **entreprises, contacts, opportunités, pipeline, activité
 - [ ] Tests pour CRUD et validation
 
 **Résultat** :
-- Non encore implémenté
+- Commit: `b4771cd` — feat(invoice): add Invoice entity and repository
+- Push: `b4771cd` — main publié
+- Tests: 381/381 OK
 
 **Estimation** : M
 
-**Dépendances** : tâche 19 (Commande), 10 (LedgerEntry)
+**Dépendances** : tâche 18 (Devis)
 
 ---
 

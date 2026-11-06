@@ -135,6 +135,28 @@ class TestBarcodeHttpApi(unittest.TestCase):
         self.assertEqual(status, 400)
 
 
+    def test_label_png(self):
+        status, body = self._request("POST", "/api/v1/wms/barcodes", {
+            "organisation_id": "org-1",
+            "product_id": "prod-1",
+            "code": "ABC-123",
+            "type": "code128",
+            "label": "Test",
+        })
+        obj_id = body["item"]["id"]
+        status, content_type, raw = self._request_raw("GET", f"/api/v1/wms/barcodes/{obj_id}/label?format=png")
+        self.assertEqual(status, 200)
+        self.assertIn("png", content_type)
+        self.assertTrue(raw.startswith(b"\x89PNG"))
+
+
+    def test_scan_page_returns_html(self):
+        status, content_type, raw = self._request_raw("GET", "/wms/scan")
+        self.assertEqual(status, 200)
+        self.assertIn("text/html", content_type)
+        self.assertIn(b"html5-qrcode", raw)
+
+
 
 if __name__ == "__main__":
     unittest.main()

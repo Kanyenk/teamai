@@ -84,6 +84,78 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_scan_page(self):
+        html = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Scan caméra</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+body { font-family: sans-serif; max-width: 480px; margin: 2rem auto; }
+#reader { width: 100%; }
+input, select, button { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; }
+#result { margin-top: 1rem; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Scan caméra</h1>
+<div id="reader"></div>
+<form id="scan-form">
+<label>Mouvement</label>
+<select id="movement_type">
+<option value="in">in</option>
+<option value="out">out</option>
+<option value="transfer">transfer</option>
+</select>
+<label>Entrepôt source</label>
+<input id="warehouse_id" placeholder="wh-...">
+<label>Entrepôt cible (transfer)</label>
+<input id="target_warehouse_id" placeholder="wh-...">
+<label>Quantité</label>
+<input id="quantity" type="number" value="1">
+<button type="submit">Valider</button>
+</form>
+<div id="result"></div>
+<script>
+const form = document.getElementById("scan-form");
+const result = document.getElementById("result");
+let lastCode = null;
+const scanner = new Html5Qrcode("reader");
+scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+  if (text !== lastCode) {
+    lastCode = text;
+    result.textContent = "Code détecté : " + text;
+  }
+});
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    code: lastCode,
+    warehouse_id: document.getElementById("warehouse_id").value,
+    movement_type: document.getElementById("movement_type").value,
+    quantity: Number(document.getElementById("quantity").value),
+  };
+  const target = document.getElementById("target_warehouse_id").value;
+  if (target) payload.target_warehouse_id = target;
+  const resp = await fetch("/api/v1/wms/scan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  result.textContent = resp.status + " → " + JSON.stringify(data, null, 2);
+});
+</script>
+</body>
+</html>"""
+        body = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _send_wms_dashboard(self):
         """Page dashboard WMS minimale avec liens vers les exports CSV."""
         html = """<!DOCTYPE html>
@@ -135,6 +207,8 @@ class HttpHandler(BaseHTTPRequestHandler):
         # Route UI : dashboard WMS minimal
         if path == "/wms":
             return self._send_wms_dashboard()
+        if path == "/wms/scan":
+            return self._send_scan_page()
 
         # Routes CRM
         if path.startswith("/api/v1/crm/"):
@@ -200,20 +274,25 @@ class HttpHandler(BaseHTTPRequestHandler):
                 if len(segments) > 4 and segments[4] == "lookup":
                     return self._send_error(400, "code requis")
                 if len(segments) > 5 and segments[5] == "label":
-                    from engine.barcode_label import generate_label_svg
+                    from engine.barcode_label import generate_label_png, generate_label_svg
                     obj = repo.get(segments[4])
                     if obj is None:
                         return self._send_error(404, "Barcode not found")
+                    fmt = query.get("format", ["svg"])[0]
                     try:
-                        svg = generate_label_svg(obj.code, obj.type)
+                        if fmt == "png":
+                            data = generate_label_png(obj.code, obj.type)
+                            ctype = "image/png"
+                        else:
+                            data = generate_label_svg(obj.code, obj.type).encode("utf-8")
+                            ctype = "image/svg+xml"
                     except Exception as e:
                         return self._send_error(400, str(e))
-                    body = svg.encode("utf-8")
                     self.send_response(200)
-                    self.send_header("Content-Type", "image/svg+xml")
-                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Content-Type", ctype)
+                    self.send_header("Content-Length", str(len(data)))
                     self.end_headers()
-                    self.wfile.write(body)
+                    self.wfile.write(data)
                     return
                 obj_id = segments[4] if len(segments) > 4 else None
                 if obj_id:

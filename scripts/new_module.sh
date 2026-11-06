@@ -571,7 +571,7 @@ grep -n "^FAIL\|^ERROR\|^FAILED" "/tmp/${MODULE}_full_tests.log" || true
 
 # Commit si demandé.
 if [ "$COMMIT" = "--commit" ]; then
-  git add "engine/${MODULE}.py" "engine/${MODULE}_repository.py" "engine/${MODULE}_service.py" "engine/http.py" "tests/test_${MODULE}.py" "tests/test_${MODULE}_repository.py" "tests/test_${MODULE}_service.py" "tests/test_${MODULE}_http_api.py" "docs/api_${MODULE}.md" README.md
+  git add "engine/${MODULE}.py" "engine/${MODULE}_repository.py" "engine/${MODULE}_service.py" "engine/http.py" "tests/test_${MODULE}.py" "tests/test_${MODULE}_repository.py" "tests/test_${MODULE}_service.py" "tests/test_${MODULE}_http_api.py" "docs/api_${MODULE}.md" README.md "scripts/modules/${MODULE}.json"
   git commit -m "feat(wms): add ${MODULE} module
 
 - Entité ${MODULE} avec validation.

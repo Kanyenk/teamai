@@ -29,6 +29,7 @@ class TestStockLevelHttpApi(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.tmp.cleanup()
 
     def _post(self, body):

@@ -46,6 +46,7 @@ class TestStockMovementHttpApi(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -178,6 +179,7 @@ class TestStockMovementPaginationHttp(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -253,6 +255,7 @@ class TestStockMovementFiltersHttp(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -333,6 +336,7 @@ class TestStockMovementPaginationMetadata(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()

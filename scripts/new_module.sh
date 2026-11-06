@@ -67,7 +67,7 @@ for f in fields:
         if f.get("min", 0) == 0:
             validations.append(f'        if not isinstance(self.{n}, int) or self.{n} < 0:\n            raise ValueError("{n} doit être un entier positif ou nul")')
         else:
-            validations.append(f'        if not isinstance(self.{n}, int) or self.{n} == 0:\n            raise ValueError("{n} doit être un entier non nul")')
+            validations.append(f'        if not isinstance(self.{n}, int) or self.{n} <= 0:\n            raise ValueError("{n} doit être un entier strictement positif")')
     elif t == "float":
         validations.append(f'        if not isinstance(self.{n}, (int, float)) or self.{n} < 0:\n            raise ValueError("{n} doit être un nombre positif ou nul")')
 

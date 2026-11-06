@@ -133,3 +133,11 @@ La documentation est disponible dans [docs/api_supplier.md](docs/api_supplier.md
 - POST /api/v1/wms/suppliers : créer (201).
 - GET /api/v1/wms/suppliers : lister (200).
 - GET /api/v1/wms/suppliers/{id} : consulter (200/404).
+
+## API StockTransfer (Stock Transfer)
+
+La documentation est disponible dans [docs/api_stock_transfer.md](docs/api_stock_transfer.md).
+
+- POST /api/v1/wms/stock-transfers : créer (201).
+- GET /api/v1/wms/stock-transfers : lister (200).
+- GET /api/v1/wms/stock-transfers/{id} : consulter (200/404).

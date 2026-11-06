@@ -1,0 +1,15 @@
+{
+  "entity": "StockTransfer",
+  "table": "stock_transfers",
+  "prefix": "trf",
+  "plural": "stock-transfers",
+  "fields": [
+    {"name": "organisation_id", "type": "str", "required": true, "test_value": "\"org-1\""},
+    {"name": "from_warehouse_id", "type": "str", "required": true, "test_value": "\"wh-1\""},
+    {"name": "to_warehouse_id", "type": "str", "required": true, "test_value": "\"wh-2\""},
+    {"name": "product_id", "type": "str", "required": true, "test_value": "\"prod-1\""},
+    {"name": "quantity", "type": "int", "required": true, "min": 1, "test_value": "10"},
+    {"name": "status", "type": "str", "required": false, "default": "\"draft\"", "test_value": "\"draft\""},
+    {"name": "note", "type": "str", "required": false, "default": "\"\"", "test_value": "\"Transfert urgent\""}
+  ]
+}

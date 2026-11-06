@@ -72,15 +72,24 @@ class WarehouseRepository:
         ).fetchone()
         return self._row_to_warehouse(row) if row else None
 
-    def list(self, limit: int = 50, offset: int = 0) -> list[Warehouse]:
+    def list(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        organisation_id: str | None = None,
+    ) -> list[Warehouse]:
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
             raise ValueError("offset must be >= 0")
-        rows = self.conn.execute(
-            "SELECT * FROM wms_warehouses ORDER BY created_at LIMIT ? OFFSET ?",
-            (limit, offset),
-        ).fetchall()
+        query = "SELECT * FROM wms_warehouses WHERE 1=1"
+        params: list = []
+        if organisation_id:
+            query += " AND organisation_id = ?"
+            params.append(organisation_id)
+        query += " ORDER BY created_at LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_warehouse(r) for r in rows]
 
     def get_by_code(self, organisation_id: str, code: str) -> Warehouse | None:
@@ -120,10 +129,13 @@ class WarehouseRepository:
         self.conn.commit()
         return cur.rowcount > 0
 
-    def count(self) -> int:
-        row = self.conn.execute(
-            "SELECT COUNT(*) AS total FROM wms_warehouses"
-        ).fetchone()
+    def count(self, organisation_id: str | None = None) -> int:
+        query = "SELECT COUNT(*) AS total FROM wms_warehouses WHERE 1=1"
+        params: list = []
+        if organisation_id:
+            query += " AND organisation_id = ?"
+            params.append(organisation_id)
+        row = self.conn.execute(query, params).fetchone()
         return row["total"]
 
     @staticmethod

@@ -89,15 +89,24 @@ class StockLevelRepository:
         ).fetchall()
         return [self._row_to_level(r) for r in rows]
 
-    def list(self, limit: int = 50, offset: int = 0) -> list[StockLevel]:
+    def list(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        organisation_id: str | None = None,
+    ) -> list[StockLevel]:
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
             raise ValueError("offset must be >= 0")
-        rows = self.conn.execute(
-            "SELECT * FROM wms_stock_levels ORDER BY created_at LIMIT ? OFFSET ?",
-            (limit, offset),
-        ).fetchall()
+        query = "SELECT * FROM wms_stock_levels WHERE 1=1"
+        params: list = []
+        if organisation_id:
+            query += " AND organisation_id = ?"
+            params.append(organisation_id)
+        query += " ORDER BY created_at LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_level(r) for r in rows]
 
     def update_quantity(self, level_id: str, quantity: int) -> StockLevel:
@@ -118,10 +127,13 @@ class StockLevelRepository:
         self.conn.commit()
         return cur.rowcount > 0
 
-    def count(self) -> int:
-        row = self.conn.execute(
-            "SELECT COUNT(*) AS total FROM wms_stock_levels"
-        ).fetchone()
+    def count(self, organisation_id: str | None = None) -> int:
+        query = "SELECT COUNT(*) AS total FROM wms_stock_levels WHERE 1=1"
+        params: list = []
+        if organisation_id:
+            query += " AND organisation_id = ?"
+            params.append(organisation_id)
+        row = self.conn.execute(query, params).fetchone()
         return row["total"]
 
     @staticmethod

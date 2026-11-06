@@ -143,8 +143,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
-                        products = repo.list(limit=limit, offset=offset)
-                        total = repo.count()
+                        organisation_id = query.get("organisation_id", [None])[0]
+                        products = repo.list(
+                            limit=limit, offset=offset,
+                            organisation_id=organisation_id,
+                        )
+                        total = repo.count(organisation_id=organisation_id)
                         self._send_json(200, {
                             "items": [p.to_dict() for p in products],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
@@ -207,8 +211,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
-                        levels = repo.list(limit=limit, offset=offset)
-                        total = repo.count()
+                        organisation_id = query.get("organisation_id", [None])[0]
+                        levels = repo.list(
+                            limit=limit, offset=offset,
+                            organisation_id=organisation_id,
+                        )
+                        total = repo.count(organisation_id=organisation_id)
                         self._send_json(200, {
                             "items": [l.to_dict() for l in levels],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
@@ -231,8 +239,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
-                        warehouses = repo.list(limit=limit, offset=offset)
-                        total = repo.count()
+                        organisation_id = query.get("organisation_id", [None])[0]
+                        warehouses = repo.list(
+                            limit=limit, offset=offset,
+                            organisation_id=organisation_id,
+                        )
+                        total = repo.count(organisation_id=organisation_id)
                         self._send_json(200, {
                             "items": [w.to_dict() for w in warehouses],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

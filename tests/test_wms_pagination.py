@@ -223,3 +223,82 @@ class TestPaginationMetadata(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(data["pagination"]["total"], 1)
         self.assertEqual(len(data["items"]), 1)
+
+
+class TestOrganisationFilter(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+        self.products = ProductRepository(self.repo.db_path)
+        self.warehouses = WarehouseRepository(self.repo.db_path)
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _post(self, endpoint, body):
+        req = urllib.request.Request(
+            self.base + endpoint,
+            data=json.dumps(body).encode(), headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    def _get(self, endpoint, query=""):
+        req = urllib.request.Request(
+            self.base + endpoint + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read())
+
+    def test_products_filter_by_organisation(self):
+        self._post("/api/v1/wms/products", {
+            "organisation_id": "org-1", "sku": "SKU-A", "name": "A", "default_price": 1,
+        })
+        self._post("/api/v1/wms/products", {
+            "organisation_id": "org-2", "sku": "SKU-B", "name": "B", "default_price": 1,
+        })
+        status, data = self._get("/api/v1/wms/products", "?organisation_id=org-1")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 1)
+        self.assertEqual(data["items"][0]["organisation_id"], "org-1")
+
+    def test_warehouses_filter_by_organisation(self):
+        self._post("/api/v1/wms/warehouses", {
+            "organisation_id": "org-1", "code": "WH-A", "name": "A",
+        })
+        self._post("/api/v1/wms/warehouses", {
+            "organisation_id": "org-2", "code": "WH-B", "name": "B",
+        })
+        status, data = self._get("/api/v1/wms/warehouses", "?organisation_id=org-2")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 1)
+        self.assertEqual(data["items"][0]["organisation_id"], "org-2")
+
+    def test_stock_levels_filter_by_organisation(self):
+        product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-ORG", name="P",
+        ))
+        warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-ORG", name="W",
+        ))
+        self._post("/api/v1/wms/stock-movements", {
+            "organisation_id": "org-1", "product_id": product.id,
+            "warehouse_id": warehouse.id, "movement_type": "in", "quantity": 5,
+        })
+        status, data = self._get("/api/v1/wms/stock-levels", "?organisation_id=org-1")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 1)
+        status, data = self._get("/api/v1/wms/stock-levels", "?organisation_id=org-9")
+        self.assertEqual(data["pagination"]["total"], 0)

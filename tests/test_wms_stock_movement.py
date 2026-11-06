@@ -194,3 +194,56 @@ class TestStockMovementValidation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStockMovementPagination(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = Path(self.tmp.name) / "test.db"
+        self.repo = StockMovementRepository(self.db)
+        self.products = ProductRepository(self.db)
+        self.warehouses = WarehouseRepository(self.db)
+        self.product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-PAG", name="P",
+        ))
+        self.warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-PAG", name="W",
+        ))
+
+    def tearDown(self):
+        self.repo.close()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _create(self, qty):
+        return self.repo.create(StockMovement(
+            organisation_id="org-1",
+            product_id=self.product.id,
+            warehouse_id=self.warehouse.id,
+            movement_type="in", quantity=qty,
+        ))
+
+    def test_list_default_limit(self):
+        for i in range(60):
+            self._create(1)
+        self.assertEqual(len(self.repo.list()), 50)
+
+    def test_list_with_limit_and_offset(self):
+        for i in range(10):
+            self._create(1)
+        page1 = self.repo.list(limit=4, offset=0)
+        page2 = self.repo.list(limit=4, offset=4)
+        self.assertEqual(len(page1), 4)
+        self.assertEqual(len(page2), 4)
+        self.assertNotEqual(page1[0].id, page2[0].id)
+
+    def test_list_invalid_limit_raises(self):
+        with self.assertRaises(ValueError):
+            self.repo.list(limit=0)
+        with self.assertRaises(ValueError):
+            self.repo.list(limit=101)
+
+    def test_list_negative_offset_raises(self):
+        with self.assertRaises(ValueError):
+            self.repo.list(offset=-1)

@@ -152,3 +152,78 @@ class TestStockMovementHttpApi(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStockMovementPaginationHttp(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+        self.products = ProductRepository(self.repo.db_path)
+        self.warehouses = WarehouseRepository(self.repo.db_path)
+        self.product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-PAG", name="P",
+        ))
+        self.warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-PAG", name="W",
+        ))
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _create(self):
+        body = json.dumps({
+            "organisation_id": "org-1",
+            "product_id": self.product.id,
+            "warehouse_id": self.warehouse.id,
+            "movement_type": "in", "quantity": 1,
+        }).encode()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements",
+            data=body, headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    def _get(self, query=""):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements" + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read())
+
+    def test_pagination_default_and_pages(self):
+        for _ in range(10):
+            self._create()
+        status, data = self._get()
+        self.assertEqual(status, 200)
+        self.assertEqual(len(data["items"]), 10)
+
+        status, page1 = self._get("?limit=4&offset=0")
+        status2, page2 = self._get("?limit=4&offset=4")
+        self.assertEqual(len(page1["items"]), 4)
+        self.assertEqual(len(page2["items"]), 4)
+        self.assertNotEqual(page1["items"][0]["id"], page2["items"][0]["id"])
+
+    def test_pagination_invalid_limit_returns_400(self):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements?limit=0",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        try:
+            urllib.request.urlopen(req, timeout=10)
+            self.fail("devrait lever 400")
+        except urllib.error.HTTPError as e:
+            self.assertEqual(e.code, 400)

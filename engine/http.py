@@ -122,6 +122,8 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def _handle_wms_get(self, path: str):
         """Gère les requêtes GET pour l'API WMS."""
+        from urllib.parse import urlparse
+        path = urlparse(path).path
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
@@ -153,7 +155,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             return
                         self._send_json(200, {"item": movement.to_dict()})
                     else:
-                        movements = repo.list()
+                        from urllib.parse import urlparse, parse_qs
+                        query = parse_qs(urlparse(self.path).query)
+                        limit = int(query.get("limit", ["50"])[0])
+                        offset = int(query.get("offset", ["0"])[0])
+                        movements = repo.list(limit=limit, offset=offset)
                         self._send_json(200, {"items": [m.to_dict() for m in movements]})
                 finally:
                     repo.close()
@@ -191,6 +197,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                     repo.close()
             else:
                 self._send_error(404, "Not Found")
+        except ValueError as exc:
+            self._send_error(400, str(exc))
         except Exception as exc:
             self._send_error(500, str(exc))
 

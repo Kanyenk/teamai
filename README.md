@@ -141,3 +141,11 @@ La documentation est disponible dans [docs/api_stock_transfer.md](docs/api_stock
 - POST /api/v1/wms/stock-transfers : créer (201).
 - GET /api/v1/wms/stock-transfers : lister (200).
 - GET /api/v1/wms/stock-transfers/{id} : consulter (200/404).
+
+## API Location (Location)
+
+La documentation est disponible dans [docs/api_location.md](docs/api_location.md).
+
+- POST /api/v1/wms/locations : créer (201).
+- GET /api/v1/wms/locations : lister (200).
+- GET /api/v1/wms/locations/{id} : consulter (200/404).

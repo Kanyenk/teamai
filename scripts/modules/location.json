@@ -1,0 +1,14 @@
+{
+  "entity": "Location",
+  "table": "locations",
+  "prefix": "loc",
+  "plural": "locations",
+  "fields": [
+    {"name": "organisation_id", "type": "str", "required": true, "test_value": "org-1"},
+    {"name": "warehouse_id", "type": "str", "required": true, "test_value": "wh-1"},
+    {"name": "code", "type": "str", "required": true, "test_value": "A-01-03"},
+    {"name": "name", "type": "str", "required": false, "default": "", "test_value": "Allée A, rayon 01, niveau 03"},
+    {"name": "zone", "type": "str", "required": false, "default": "", "test_value": "picking"},
+    {"name": "capacity", "type": "int", "required": false, "default": 0, "test_value": 100}
+  ]
+}

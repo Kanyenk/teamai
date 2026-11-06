@@ -182,6 +182,24 @@ class HttpHandler(BaseHTTPRequestHandler):
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "locations":
+                from engine.location_repository import LocationRepository
+                repo = LocationRepository(self.store.db_path)
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    obj = repo.get(obj_id)
+                    if obj is None:
+                        return self._send_error(404, "Location not found")
+                    self._send_json(200, {"item": obj.to_dict()})
+                    return
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                org_id = query.get("organisation_id", [None])[0]
+                if not org_id:
+                    return self._send_error(400, "organisation_id requis")
+                items = repo.list(org_id)
+                self._send_json(200, {"items": [o.to_dict() for o in items]})
+                return
             if len(segments) >= 4 and segments[3] == "stock-transfers":
                 from engine.stock_transfer_repository import StockTransferRepository
                 repo = StockTransferRepository(self.store.db_path)
@@ -795,6 +813,27 @@ class HttpHandler(BaseHTTPRequestHandler):
 
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "locations":
+                from engine.location_repository import LocationRepository
+                from engine.location import Location
+                repo = LocationRepository(self.store.db_path)
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    return self._send_error(404, "Location not found")
+                try:
+                    obj = Location(
+                        organisation_id=body.get("organisation_id", ""),
+                        warehouse_id=body.get("warehouse_id", ""),
+                        code=body.get("code", ""),
+                        name=body.get("name", ),
+                        zone=body.get("zone", ),
+                        capacity=body.get("capacity", 0),
+                    )
+                    result = repo.create(obj)
+                except ValueError as e:
+                    return self._send_error(400, str(e))
+                self._send_json(201, {"item": result.to_dict()})
+                return
             if len(segments) >= 4 and segments[3] == "stock-transfers":
                 from engine.stock_transfer_repository import StockTransferRepository
                 from engine.stock_transfer import StockTransfer

@@ -154,6 +154,16 @@ class HttpHandler(BaseHTTPRequestHandler):
             # segments = [api, v1, wms, products, (id)]
             if len(segments) >= 4 and segments[3] == "products":
                 product_id = segments[4] if len(segments) > 4 else None
+                if product_id and len(segments) >= 7 and segments[5] == "alert-threshold" and segments[6] == "history":
+                    repo = ProductRepository(self.store.db_path)
+                    try:
+                        if repo.get(product_id) is None:
+                            return self._send_error(404, "Product not found")
+                        self._send_json(200, {
+                            "items": repo.list_threshold_history(product_id),
+                        })
+                    finally:
+                        repo.close()
                 if product_id and len(segments) >= 6 and segments[5] == "alert-threshold":
                     repo = ProductRepository(self.store.db_path)
                     try:

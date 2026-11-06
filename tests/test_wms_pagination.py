@@ -1187,3 +1187,29 @@ class TestStockAlerts(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertEqual(data["pagination"]["total"], 2)
+
+    def test_alert_threshold_history(self):
+        product_id = self._create_stock("SKU-HIST", 1)
+        for threshold in (5, 8):
+            body = json.dumps({"threshold": threshold}).encode()
+            req = urllib.request.Request(
+                self.base + f"/api/v1/wms/products/{product_id}/alert-threshold",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        status, data = self._get(
+            f"/api/v1/wms/products/{product_id}/alert-threshold/history"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(len(data["items"]), 2)
+        self.assertEqual(data["items"][0]["new_threshold"], 8)
+        self.assertEqual(data["items"][0]["old_threshold"], 5)
+        self.assertEqual(data["items"][1]["new_threshold"], 5)
+        self.assertIsNone(data["items"][1]["old_threshold"])
+
+    def test_alert_threshold_history_not_found(self):
+        status, data = self._get(
+            "/api/v1/wms/products/prod-inconnu/alert-threshold/history"
+        )
+        self.assertEqual(status, 404)

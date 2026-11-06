@@ -46,6 +46,17 @@ class ProductRepository:
             self.conn.execute(
                 "ALTER TABLE wms_products ADD COLUMN alert_threshold INTEGER"
             )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS wms_alert_threshold_history (
+                id TEXT PRIMARY KEY,
+                product_id TEXT NOT NULL,
+                old_threshold INTEGER,
+                new_threshold INTEGER NOT NULL,
+                changed_at TEXT NOT NULL
+            )
+            """
+        )
 
     def create(self, product: Product) -> Product:
         if not isinstance(product, Product):
@@ -213,19 +224,42 @@ class ProductRepository:
         )
 
     def set_alert_threshold(self, product_id: str, threshold: int) -> Optional[int]:
-        """Définit le seuil d'alerte d'un produit. Retourne None si inconnu."""
+        """Définit le seuil d'alerte d'un produit et journalise le changement."""
         cur = self.conn.execute(
-            "SELECT id FROM wms_products WHERE id = ? AND is_active = 1",
+            "SELECT alert_threshold FROM wms_products WHERE id = ? AND is_active = 1",
             (product_id,),
         )
-        if cur.fetchone() is None:
+        row = cur.fetchone()
+        if row is None:
             return None
+        old_threshold = row["alert_threshold"]
+        now = datetime.now(timezone.utc).isoformat()
         with self.conn:
             self.conn.execute(
                 "UPDATE wms_products SET alert_threshold = ?, updated_at = ? WHERE id = ?",
-                (threshold, datetime.now(timezone.utc).isoformat(), product_id),
+                (threshold, now, product_id),
+            )
+            self.conn.execute(
+                "INSERT INTO wms_alert_threshold_history "
+                "(id, product_id, old_threshold, new_threshold, changed_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (f"th-{uuid4().hex[:12]}", product_id, old_threshold, threshold, now),
             )
         return threshold
+
+    def list_threshold_history(self, product_id: str) -> List[dict]:
+        """Retourne l'historique des seuils d'un produit, du plus récent."""
+        cur = self.conn.execute(
+            "SELECT old_threshold, new_threshold, changed_at "
+            "FROM wms_alert_threshold_history WHERE product_id = ? "
+            "ORDER BY changed_at DESC",
+            (product_id,),
+        )
+        return [
+            {"old_threshold": r["old_threshold"], "new_threshold": r["new_threshold"],
+             "changed_at": r["changed_at"]}
+            for r in cur
+        ]
 
     def get_alert_threshold(self, product_id: str) -> Optional[int]:
         """Retourne le seuil d'alerte d'un produit, ou None."""

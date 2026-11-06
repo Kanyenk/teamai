@@ -82,6 +82,13 @@ class PurchaseOrderRepository:
     def update_status(self, order_id: str, status: str) -> PurchaseOrder:
         if status not in {"draft", "received", "cancelled"}:
             raise ValueError("status must be draft, received or cancelled")
+        current = self.get_by_id(order_id)
+        if current is None:
+            raise ValueError(f"purchase order {order_id} not found")
+        if current.status != "draft":
+            raise ValueError(
+                f"purchase order {order_id} is already {current.status}"
+            )
         now = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
             "UPDATE wms_purchase_orders SET status = ?, updated_at = ? WHERE id = ?",

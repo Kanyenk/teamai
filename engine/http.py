@@ -641,6 +641,29 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_error(404, "Not Found")
                 finally:
                     repo.close()
+            elif len(segments) >= 4 and segments[3] == "purchase-orders":
+                from xohive.wms.repository.purchase_order_repository import PurchaseOrderRepository
+                repo = PurchaseOrderRepository(self.store.db_path)
+                try:
+                    if len(segments) == 4:
+                        # Liste des commandes d'une organisation
+                        # (GET /api/v1/wms/purchase-orders?organisation_id=...)
+                        from urllib.parse import urlparse, parse_qs
+                        params = parse_qs(urlparse(self.path).query)
+                        org = params.get("organisation_id", [""])[0]
+                        items = repo.list_by_organisation(org)
+                        self._send_json(200, {"items": [o.to_dict() for o in items]})
+                    elif len(segments) == 5:
+                        # Consultation d'une commande
+                        # (GET /api/v1/wms/purchase-orders/{id})
+                        order = repo.get_by_id(segments[4])
+                        if order is None:
+                            return self._send_error(404, "Purchase order not found")
+                        self._send_json(200, {"item": order.to_dict()})
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
             else:
                 self._send_error(404, "Not Found")
         except ValueError as exc:
@@ -801,6 +824,31 @@ class HttpHandler(BaseHTTPRequestHandler):
                         count_id = segments[4]
                         result = repo.adjust(count_id, reason=body.get("reason"))
                         self._send_json(200, result)
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
+            elif len(segments) >= 4 and segments[3] == "purchase-orders":
+                from xohive.wms.repository.purchase_order_repository import PurchaseOrderRepository
+                from xohive.wms.domain.purchase_order import PurchaseOrder
+                repo = PurchaseOrderRepository(self.store.db_path)
+                try:
+                    if len(segments) == 4:
+                        # Création d'une commande fournisseur
+                        # (POST /api/v1/wms/purchase-orders)
+                        order = PurchaseOrder(
+                            organisation_id=body.get("organisation_id", ""),
+                            supplier_name=body.get("supplier_name", ""),
+                            warehouse_id=body.get("warehouse_id", ""),
+                        )
+                        result = repo.create(order)
+                        self._send_json(201, {"item": result.to_dict()})
+                    elif len(segments) >= 6 and segments[5] == "receive":
+                        # Réception d'une commande
+                        # (POST /api/v1/wms/purchase-orders/{id}/receive)
+                        order_id = segments[4]
+                        result = repo.update_status(order_id, "received")
+                        self._send_json(200, {"item": result.to_dict()})
                     else:
                         self._send_error(404, "Not Found")
                 finally:

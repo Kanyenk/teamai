@@ -1213,3 +1213,36 @@ class TestStockAlerts(unittest.TestCase):
             "/api/v1/wms/products/prod-inconnu/alert-threshold/history"
         )
         self.assertEqual(status, 404)
+
+    def test_dashboard_stock_csv_format(self):
+        product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-DASH-CSV", name="A", default_price=10.0,
+        ))
+        warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-DASH-CSV", name="W",
+        ))
+        for _ in range(2):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "product_id": product.id,
+                "warehouse_id": warehouse.id,
+                "movement_type": "in", "quantity": 1,
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/stock-movements",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/dashboard/stock?organisation_id=org-1&format=csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.headers.get("Content-Type"), "text/csv; charset=utf-8")
+            body = r.read().decode("utf-8")
+        self.assertIn(
+            "warehouse_id,code,name,total_quantity,product_count", body
+        )
+        self.assertIn("WH-DASH-CSV", body)

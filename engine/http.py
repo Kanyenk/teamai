@@ -499,6 +499,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                                 "product_id": pid, "warehouse_id": wid,
                                 "quantity": qty, "threshold": effective,
                             })
+                    if query.get("format", ["json"])[0] == "csv":
+                        header = ["warehouse_id", "code", "name", "total_quantity", "product_count"]
+                        rows = [
+                            [w[k] for k in header]
+                            for w in per_warehouse.values()
+                        ]
+                        self._send_csv(200, "stock_dashboard.csv", header, rows)
+                        return
+                    if query.get("format", ["json"])[0] == "csv":
+                        header = ["warehouse_id", "code", "name", "total_quantity", "product_count"]
+                        rows = [
+                            [w[k] for k in header]
+                            for w in per_warehouse.values()
+                        ]
+                        self._send_csv(200, "stock_dashboard.csv", header, rows)
+                        return
                     self._send_json(200, {
                         "organisation_id": organisation_id,
                         "warehouses": list(per_warehouse.values()),

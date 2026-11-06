@@ -109,3 +109,11 @@ La documentation des endpoints HTTP des retours est disponible dans [docs/api_re
 - POST /api/v1/wms/returns/{id}/receive : réceptionner (200/400).
 - POST /api/v1/wms/returns/{id}/refund : rembourser (200/400).
 - POST /api/v1/wms/returns/{id}/cancel : annuler (200/400).
+
+## API Stock Adjustments (Ajustements de stock)
+
+La documentation des endpoints HTTP des ajustements est disponible dans [docs/api_stock_adjustments.md](docs/api_stock_adjustments.md).
+
+- POST /api/v1/wms/stock-adjustments : créer un ajustement (201).
+- GET /api/v1/wms/stock-adjustments : lister par organisation (200).
+- GET /api/v1/wms/stock-adjustments/{id} : consulter (200/404).

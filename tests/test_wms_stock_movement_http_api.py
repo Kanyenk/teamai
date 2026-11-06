@@ -307,3 +307,71 @@ class TestStockMovementFiltersHttp(unittest.TestCase):
         status, data = self._get("?movement_type=in&limit=4&offset=2")
         self.assertEqual(status, 200)
         self.assertEqual(len(data["items"]), 4)
+
+
+class TestStockMovementPaginationMetadata(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+        self.products = ProductRepository(self.repo.db_path)
+        self.warehouses = WarehouseRepository(self.repo.db_path)
+        self.product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-META", name="P",
+        ))
+        self.warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-META", name="W",
+        ))
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _create(self, mtype="in", qty=1):
+        body = json.dumps({
+            "organisation_id": "org-1",
+            "product_id": self.product.id,
+            "warehouse_id": self.warehouse.id,
+            "movement_type": mtype, "quantity": qty,
+        }).encode()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements",
+            data=body, headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    def _get(self, query=""):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements" + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read())
+
+    def test_pagination_metadata_present(self):
+        for _ in range(7):
+            self._create()
+        status, data = self._get("?limit=3&offset=2")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 7)
+        self.assertEqual(data["pagination"]["limit"], 3)
+        self.assertEqual(data["pagination"]["offset"], 2)
+        self.assertEqual(len(data["items"]), 3)
+
+    def test_pagination_metadata_with_filter(self):
+        self._create("in", 1)
+        self._create("adjustment", 1)
+        status, data = self._get("?movement_type=in")
+        self.assertEqual(data["pagination"]["total"], 1)
+        self.assertEqual(len(data["items"]), 1)

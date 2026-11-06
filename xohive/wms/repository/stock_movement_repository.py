@@ -184,6 +184,26 @@ class StockMovementRepository:
         rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_movement(r) for r in rows]
 
+    def count(
+        self,
+        product_id: str | None = None,
+        warehouse_id: str | None = None,
+        movement_type: str | None = None,
+    ) -> int:
+        query = "SELECT COUNT(*) AS total FROM wms_stock_movements WHERE 1=1"
+        params: list = []
+        if product_id:
+            query += " AND product_id = ?"
+            params.append(product_id)
+        if warehouse_id:
+            query += " AND warehouse_id = ?"
+            params.append(warehouse_id)
+        if movement_type:
+            query += " AND movement_type = ?"
+            params.append(movement_type)
+        row = self.conn.execute(query, params).fetchone()
+        return row["total"]
+
     @staticmethod
     def _row_to_movement(row: sqlite3.Row) -> StockMovement:
         return StockMovement(

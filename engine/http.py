@@ -172,7 +172,19 @@ class HttpHandler(BaseHTTPRequestHandler):
                             warehouse_id=warehouse_id,
                             movement_type=movement_type,
                         )
-                        self._send_json(200, {"items": [m.to_dict() for m in movements]})
+                        total = repo.count(
+                            product_id=product_id,
+                            warehouse_id=warehouse_id,
+                            movement_type=movement_type,
+                        )
+                        self._send_json(200, {
+                            "items": [m.to_dict() for m in movements],
+                            "pagination": {
+                                "total": total,
+                                "limit": limit,
+                                "offset": offset,
+                            },
+                        })
                 finally:
                     repo.close()
             if len(segments) >= 4 and segments[3] == "stock-levels":

@@ -689,7 +689,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             if len(segments) >= 5 and segments[4] == "companies":
                 company_id = segments[5] if len(segments) > 5 else None
                 if company_id:
-                    repo = CompanyRepository(self.store)
+                    repo = CompanyRepository(self.store.db_path)
                     company = repo.get(company_id)
                     if company:
                         self._send_json(200, {"item": {
@@ -707,7 +707,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Company not found")
                 else:
-                    repo = CompanyRepository(self.store)
+                    repo = CompanyRepository(self.store.db_path)
                     companies = repo.list()
                     self._send_json(200, {"items": [{
                         "id": c.id, "name": c.name, "siret": c.siret,
@@ -718,7 +718,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "contacts":
                 contact_id = segments[5] if len(segments) > 5 else None
                 if contact_id:
-                    repo = ContactRepository(self.store)
+                    repo = ContactRepository(self.store.db_path)
                     contact = repo.get(contact_id)
                     if contact:
                         self._send_json(200, {"item": {
@@ -733,7 +733,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Contact not found")
                 else:
-                    repo = ContactRepository(self.store)
+                    repo = ContactRepository(self.store.db_path)
                     contacts = repo.list()
                     self._send_json(200, {"items": [{
                         "id": c.id, "first_name": c.first_name, "last_name": c.last_name,
@@ -744,7 +744,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "opportunities":
                 opp_id = segments[5] if len(segments) > 5 else None
                 if opp_id:
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     opp = repo.get(opp_id)
                     if opp:
                         self._send_json(200, {"item": {
@@ -760,7 +760,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Opportunity not found")
                 else:
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     opps = repo.list()
                     self._send_json(200, {"items": [{
                         "id": o.id, "title": o.title, "amount": o.amount,
@@ -771,7 +771,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "activities":
                 activity_id = segments[5] if len(segments) > 5 else None
                 if activity_id:
-                    repo = ActivityRepository(self.store)
+                    repo = ActivityRepository(self.store.db_path)
                     activity = repo.get(activity_id)
                     if activity:
                         self._send_json(200, {"item": {
@@ -788,7 +788,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Activity not found")
                 else:
-                    repo = ActivityRepository(self.store)
+                    repo = ActivityRepository(self.store.db_path)
                     activities = repo.list()
                     self._send_json(200, {"items": [{
                         "id": a.id, "type": a.type, "status": a.status,
@@ -799,7 +799,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "pipeline":
                 company_id = segments[5] if len(segments) > 5 else None
                 if company_id:
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     opps = repo.list()
                     repo.close()
                     active = [o for o in opps if o.company_id == company_id]
@@ -816,7 +816,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                                   for o in active]
                     })
                 else:
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     opps = repo.list()
                     repo.close()
                     self._send_json(200, {
@@ -829,7 +829,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "quotations":
                 quote_id = segments[5] if len(segments) > 5 else None
                 if quote_id:
-                    repo = QuotationRepository(self.store)
+                    repo = QuotationRepository(self.store.db_path)
                     quote = repo.get(quote_id)
                     repo.close()
                     if quote:
@@ -837,7 +837,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Quotation not found")
                 else:
-                    repo = QuotationRepository(self.store)
+                    repo = QuotationRepository(self.store.db_path)
                     quotes = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [q.to_dict() for q in quotes]})
@@ -845,7 +845,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "orders":
                 order_id = segments[5] if len(segments) > 5 else None
                 if order_id:
-                    repo = OrderRepository(self.store)
+                    repo = OrderRepository(self.store.db_path)
                     order = repo.get(order_id)
                     repo.close()
                     if order:
@@ -853,7 +853,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Order not found")
                 else:
-                    repo = OrderRepository(self.store)
+                    repo = OrderRepository(self.store.db_path)
                     orders = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [o.to_dict() for o in orders]})
@@ -861,7 +861,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "invoices":
                 invoice_id = segments[5] if len(segments) > 5 else None
                 if invoice_id:
-                    repo = InvoiceRepository(self.store)
+                    repo = InvoiceRepository(self.store.db_path)
                     invoice = repo.get(invoice_id)
                     repo.close()
                     if invoice:
@@ -869,7 +869,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Invoice not found")
                 else:
-                    repo = InvoiceRepository(self.store)
+                    repo = InvoiceRepository(self.store.db_path)
                     invoices = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [i.to_dict() for i in invoices]})
@@ -877,7 +877,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "credit-notes":
                 credit_note_id = segments[5] if len(segments) > 5 else None
                 if credit_note_id:
-                    repo = CreditNoteRepository(self.store)
+                    repo = CreditNoteRepository(self.store.db_path)
                     credit_note = repo.get(credit_note_id)
                     repo.close()
                     if credit_note:
@@ -885,7 +885,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "CreditNote not found")
                 else:
-                    repo = CreditNoteRepository(self.store)
+                    repo = CreditNoteRepository(self.store.db_path)
                     credit_notes = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [c.to_dict() for c in credit_notes]})
@@ -893,7 +893,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "payments":
                 payment_id = segments[5] if len(segments) > 5 else None
                 if payment_id:
-                    repo = PaymentRepository(self.store)
+                    repo = PaymentRepository(self.store.db_path)
                     payment = repo.get(payment_id)
                     repo.close()
                     if payment:
@@ -901,7 +901,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Payment not found")
                 else:
-                    repo = PaymentRepository(self.store)
+                    repo = PaymentRepository(self.store.db_path)
                     payments = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [p.to_dict() for p in payments]})
@@ -909,7 +909,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "reconciliations":
                 reconciliation_id = segments[5] if len(segments) > 5 else None
                 if reconciliation_id:
-                    repo = ReconciliationRepository(self.store)
+                    repo = ReconciliationRepository(self.store.db_path)
                     reconciliation = repo.get(reconciliation_id)
                     repo.close()
                     if reconciliation:
@@ -917,7 +917,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                     else:
                         self._send_error(404, "Reconciliation not found")
                 else:
-                    repo = ReconciliationRepository(self.store)
+                    repo = ReconciliationRepository(self.store.db_path)
                     reconciliations = repo.list()
                     repo.close()
                     self._send_json(200, {"items": [r.to_dict() for r in reconciliations]})
@@ -986,7 +986,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             if len(segments) >= 5 and segments[4] == "companies":
                 try:
                     company = Company(**body)
-                    repo = CompanyRepository(self.store)
+                    repo = CompanyRepository(self.store.db_path)
                     result = repo.create(company)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -996,7 +996,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "contacts":
                 try:
                     contact = Contact(**body)
-                    repo = ContactRepository(self.store)
+                    repo = ContactRepository(self.store.db_path)
                     result = repo.create(contact)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1006,14 +1006,14 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 6 and segments[4] == "opportunities" and segments[6] == "pipeline":
                 opp_id = segments[5]
                 try:
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     opp = repo.get(opp_id)
                     repo.close()
                     if opp:
                         if body.get("stage") in opp.ALLOWED_STAGES:
                             opp.stage = body["stage"]
                             opp.updated_at = opp._now_iso()
-                            repo = OpportunityRepository(self.store)
+                            repo = OpportunityRepository(self.store.db_path)
                             result = repo.update(opp)
                             repo.close()
                             self._send_json(200, {"stage": result.stage})
@@ -1027,7 +1027,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "opportunities":
                 try:
                     opp = Opportunity(**body)
-                    repo = OpportunityRepository(self.store)
+                    repo = OpportunityRepository(self.store.db_path)
                     result = repo.create(opp)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1037,7 +1037,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "activities":
                 try:
                     activity = Activity(**body)
-                    repo = ActivityRepository(self.store)
+                    repo = ActivityRepository(self.store.db_path)
                     result = repo.create(activity)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1047,7 +1047,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "quotations":
                 try:
                     quote = Quotation(**body)
-                    repo = QuotationRepository(self.store)
+                    repo = QuotationRepository(self.store.db_path)
                     result = repo.create(quote)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1057,7 +1057,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "orders":
                 try:
                     order = Order(**body)
-                    repo = OrderRepository(self.store)
+                    repo = OrderRepository(self.store.db_path)
                     result = repo.create(order)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1067,7 +1067,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "invoices":
                 try:
                     invoice = Invoice(**body)
-                    repo = InvoiceRepository(self.store)
+                    repo = InvoiceRepository(self.store.db_path)
                     result = repo.create(invoice)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1077,7 +1077,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "credit-notes":
                 try:
                     credit_note = CreditNote(**body)
-                    repo = CreditNoteRepository(self.store)
+                    repo = CreditNoteRepository(self.store.db_path)
                     result = repo.create(credit_note)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1087,7 +1087,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "payments":
                 try:
                     payment = Payment(**body)
-                    repo = PaymentRepository(self.store)
+                    repo = PaymentRepository(self.store.db_path)
                     result = repo.create(payment)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})
@@ -1097,7 +1097,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             elif len(segments) >= 5 and segments[4] == "reconciliations":
                 try:
                     reconciliation = Reconciliation(**body)
-                    repo = ReconciliationRepository(self.store)
+                    repo = ReconciliationRepository(self.store.db_path)
                     result = repo.create(reconciliation)
                     repo.close()
                     self._send_json(201, {"item": result.to_dict()})

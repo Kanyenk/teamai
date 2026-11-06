@@ -1,0 +1,13 @@
+{
+  "entity": "Barcode",
+  "table": "barcodes",
+  "prefix": "brc",
+  "plural": "barcodes",
+  "fields": [
+    {"name": "organisation_id", "type": "str", "required": true, "test_value": "org-1"},
+    {"name": "product_id", "type": "str", "required": true, "test_value": "prod-1"},
+    {"name": "code", "type": "str", "required": true, "test_value": "3012345678900"},
+    {"name": "type", "type": "str", "required": true, "default": "ean13", "test_value": "ean13"},
+    {"name": "label", "type": "str", "required": false, "default": "", "test_value": "Code-barres produit A"}
+  ]
+}

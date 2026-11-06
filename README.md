@@ -149,3 +149,11 @@ La documentation est disponible dans [docs/api_location.md](docs/api_location.md
 - POST /api/v1/wms/locations : créer (201).
 - GET /api/v1/wms/locations : lister (200).
 - GET /api/v1/wms/locations/{id} : consulter (200/404).
+
+## API Barcode (Barcode)
+
+La documentation est disponible dans [docs/api_barcode.md](docs/api_barcode.md).
+
+- POST /api/v1/wms/barcodes : créer (201).
+- GET /api/v1/wms/barcodes : lister (200).
+- GET /api/v1/wms/barcodes/{id} : consulter (200/404).

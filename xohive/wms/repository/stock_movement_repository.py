@@ -159,7 +159,15 @@ class StockMovementRepository:
         product_id: str | None = None,
         warehouse_id: str | None = None,
         movement_type: str | None = None,
+        order_by: str = "created_at",
+        direction: str = "asc",
     ) -> list[StockMovement]:
+        if order_by not in {"created_at", "quantity", "movement_type"}:
+            raise ValueError(
+                "order_by must be one of ['created_at', 'movement_type', 'quantity']"
+            )
+        if direction not in {"asc", "desc"}:
+            raise ValueError("direction must be 'asc' or 'desc'")
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
@@ -179,7 +187,7 @@ class StockMovementRepository:
         if movement_type:
             query += " AND movement_type = ?"
             params.append(movement_type)
-        query += " ORDER BY created_at LIMIT ? OFFSET ?"
+        query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_movement(r) for r in rows]

@@ -99,7 +99,15 @@ class ProductRepository:
         organisation_id: Optional[str] = None,
         offset: int = 0,
         limit: int = 50,
+        order_by: str = "created_at",
+        direction: str = "asc",
     ) -> List[Product]:
+        if order_by not in {"created_at", "name", "sku", "default_price"}:
+            raise ValueError(
+                "order_by must be one of ['created_at', 'default_price', 'name', 'sku']"
+            )
+        if direction not in {"asc", "desc"}:
+            raise ValueError("direction must be 'asc' or 'desc'")
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
@@ -109,7 +117,7 @@ class ProductRepository:
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
-        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         cur = self.conn.execute(query, params)
         return [self._row_to_product(r) for r in cur.fetchall()]

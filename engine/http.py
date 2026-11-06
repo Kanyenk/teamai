@@ -143,9 +143,14 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         products = repo.list(
                             limit=limit, offset=offset,
+                            order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
                         )
                         total = repo.count(organisation_id=organisation_id)
@@ -171,11 +176,14 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
                         product_id = query.get("product_id", [None])[0]
                         warehouse_id = query.get("warehouse_id", [None])[0]
                         movement_type = query.get("movement_type", [None])[0]
                         movements = repo.list(
                             limit=limit, offset=offset,
+                            order_by=order_by, direction=direction,
                             product_id=product_id,
                             warehouse_id=warehouse_id,
                             movement_type=movement_type,
@@ -211,9 +219,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         levels = repo.list(
                             limit=limit, offset=offset,
+                            order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
                         )
                         total = repo.count(organisation_id=organisation_id)
@@ -239,9 +250,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                         query = parse_qs(urlparse(self.path).query)
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         warehouses = repo.list(
                             limit=limit, offset=offset,
+                            order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
                         )
                         total = repo.count(organisation_id=organisation_id)

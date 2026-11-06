@@ -77,7 +77,15 @@ class WarehouseRepository:
         limit: int = 50,
         offset: int = 0,
         organisation_id: str | None = None,
+        order_by: str = "created_at",
+        direction: str = "asc",
     ) -> list[Warehouse]:
+        if order_by not in {"created_at", "name", "code"}:
+            raise ValueError(
+                "order_by must be one of ['code', 'created_at', 'name']"
+            )
+        if direction not in {"asc", "desc"}:
+            raise ValueError("direction must be 'asc' or 'desc'")
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
@@ -87,7 +95,7 @@ class WarehouseRepository:
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
-        query += " ORDER BY created_at LIMIT ? OFFSET ?"
+        query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_warehouse(r) for r in rows]

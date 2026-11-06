@@ -35,6 +35,7 @@ class TestPaginationHttp(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -148,6 +149,7 @@ class TestPaginationMetadata(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -242,6 +244,7 @@ class TestOrganisationFilter(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()
@@ -320,6 +323,7 @@ class TestSorting(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.tmp.cleanup()
 
@@ -380,6 +384,7 @@ class TestSortMetadata(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.server_close()
         self._tmp.cleanup()
 
     def _create_warehouses(self):
@@ -431,6 +436,7 @@ class TestSearch(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.server.server_close()
         self._tmp.cleanup()
 
@@ -495,6 +501,7 @@ class TestDateFilters(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.server_close()
         self._tmp.cleanup()
 
     def _create_warehouses(self):
@@ -558,6 +565,7 @@ class TestProductDateFilters(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.server_close()
         self._tmp.cleanup()
 
     def _create_products(self):
@@ -610,6 +618,7 @@ class TestMovementDateFilters(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.server.server_close()
         self._tmp.cleanup()
 
@@ -683,6 +692,7 @@ class TestQuantityFilters(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.server_close()
         self._tmp.cleanup()
 
     def _create_levels(self):
@@ -748,7 +758,8 @@ class TestQuantityFilters(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
         with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=10):
+                pass
         self.assertEqual(ctx.exception.code, 400)
 
 
@@ -767,6 +778,7 @@ class TestMovementQuantityFilters(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.server.server_close()
         self._tmp.cleanup()
 
@@ -833,7 +845,8 @@ class TestMovementQuantityFilters(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
         with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=10):
+                pass
         self.assertEqual(ctx.exception.code, 400)
 
 
@@ -852,6 +865,7 @@ class TestCsvExport(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.server.server_close()
         self._tmp.cleanup()
 
@@ -907,6 +921,7 @@ class TestMovementCsvExport(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.server.server_close()
         self._tmp.cleanup()
 
@@ -974,6 +989,7 @@ class TestDateValidation(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.server_close()
         self._tmp.cleanup()
 
     def test_warehouses_invalid_created_from_returns_400(self):
@@ -982,7 +998,8 @@ class TestDateValidation(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
         with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=10):
+                pass
         self.assertEqual(ctx.exception.code, 400)
 
     def test_warehouses_invalid_created_to_returns_400(self):
@@ -991,7 +1008,8 @@ class TestDateValidation(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
         with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=10):
+                pass
         self.assertEqual(ctx.exception.code, 400)
 
     def test_products_invalid_created_from_returns_400(self):
@@ -1000,7 +1018,8 @@ class TestDateValidation(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
         with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=10):
+                pass
         self.assertEqual(ctx.exception.code, 400)
 
 
@@ -1021,6 +1040,7 @@ class TestStockAlerts(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown()
+        self.server.server_close()
         self.products.close()
         self.warehouses.close()
         self.tmp.cleanup()

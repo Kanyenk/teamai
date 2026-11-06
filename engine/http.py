@@ -141,6 +141,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {"items": [p.to_dict() for p in products]})
                 finally:
                     repo.close()
+            if len(segments) >= 4 and segments[3] == "stock-movements":
+                from xohive.wms.repository.stock_movement_repository import StockMovementRepository
+                movement_id = segments[4] if len(segments) > 4 else None
+                repo = StockMovementRepository(self.store.db_path)
+                try:
+                    if movement_id:
+                        movement = repo.get_by_id(movement_id)
+                        if movement is None:
+                            self._send_error(404, "StockMovement not found")
+                            return
+                        self._send_json(200, {"item": movement.to_dict()})
+                    else:
+                        movements = repo.list()
+                        self._send_json(200, {"items": [m.to_dict() for m in movements]})
+                finally:
+                    repo.close()
             if len(segments) >= 4 and segments[3] == "stock-levels":
                 from xohive.wms.repository.stock_level_repository import StockLevelRepository
                 level_id = segments[4] if len(segments) > 4 else None
@@ -215,6 +231,45 @@ class HttpHandler(BaseHTTPRequestHandler):
                         action="create",
                         old_values=None,
                         new_values={"id": result.id, "sku": result.sku},
+                    ))
+                finally:
+                    audit_repo.close()
+
+                self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "stock-movements":
+                from xohive.wms.repository.stock_movement_repository import StockMovementRepository
+                from xohive.wms.domain.stock_movement import StockMovement
+                movement = StockMovement(
+                    organisation_id=body.get("organisation_id", ""),
+                    product_id=body.get("product_id", ""),
+                    warehouse_id=body.get("warehouse_id", ""),
+                    movement_type=body.get("movement_type", ""),
+                    quantity=int(body.get("quantity", 0)),
+                    target_warehouse_id=body.get("target_warehouse_id"),
+                    reason=body.get("reason"),
+                )
+                repo = StockMovementRepository(self.store.db_path)
+                try:
+                    result = repo.create(movement)
+                finally:
+                    repo.close()
+
+                audit_repo = AuditCRMRepository(self.store.db_path)
+                try:
+                    audit_repo.create(AuditEvent(
+                        id=uuid.uuid4().hex,
+                        organisation_id=result.organisation_id,
+                        entity_type="stock_movement",
+                        entity_id=result.id,
+                        action="create",
+                        old_values=None,
+                        new_values={
+                            "id": result.id,
+                            "product_id": result.product_id,
+                            "warehouse_id": result.warehouse_id,
+                            "movement_type": result.movement_type,
+                            "quantity": result.quantity,
+                        },
                     ))
                 finally:
                     audit_repo.close()

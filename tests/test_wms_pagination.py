@@ -1246,3 +1246,21 @@ class TestStockAlerts(unittest.TestCase):
             "warehouse_id,code,name,total_quantity,product_count", body
         )
         self.assertIn("WH-DASH-CSV", body)
+
+    def test_alert_threshold_history_csv_format(self):
+        product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-HIST-CSV", name="A", default_price=10.0,
+        ))
+        self.products.set_alert_threshold(product.id, 5)
+        self.products.set_alert_threshold(product.id, 3)
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/products/{product.id}/alert-threshold/history?format=csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.headers.get("Content-Type"), "text/csv; charset=utf-8")
+            body = r.read().decode("utf-8")
+        self.assertIn(
+            "old_threshold,new_threshold,changed_at", body
+        )

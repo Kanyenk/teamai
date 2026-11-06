@@ -159,8 +159,30 @@ class HttpHandler(BaseHTTPRequestHandler):
                     try:
                         if repo.get(product_id) is None:
                             return self._send_error(404, "Product not found")
+                        history = repo.list_threshold_history(product_id)
+                        fmt = dict(
+                            p.split("=", 1)
+                            for p in urlparse(self.path).query.split("&")
+                            if "=" in p
+                        ).get("format", "json")
+                        if fmt == "csv":
+                            header = [
+                                "old_threshold", "new_threshold", "changed_at",
+                            ]
+                            rows = [
+                                [
+                                    h["old_threshold"],
+                                    h["new_threshold"],
+                                    h["changed_at"],
+                                ]
+                                for h in history
+                            ]
+                            self._send_csv(
+                                200, "alert_threshold_history.csv", header, rows
+                            )
+                            return
                         self._send_json(200, {
-                            "items": repo.list_threshold_history(product_id),
+                            "items": history,
                         })
                     finally:
                         repo.close()

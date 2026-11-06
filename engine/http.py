@@ -156,7 +156,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                             organisation_id=organisation_id,
                             search=search
                         )
-                        total = repo.count(organisation_id=organisation_id)
+                        total = repo.count(organisation_id=organisation_id, search=search)
                         self._send_json(200, {
                             "items": [p.to_dict() for p in products],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
@@ -268,7 +268,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                             organisation_id=organisation_id,
                             search=search
                         )
-                        total = repo.count(organisation_id=organisation_id)
+                        total = repo.count(organisation_id=organisation_id, search=search)
                         self._send_json(200, {
                             "items": [w.to_dict() for w in warehouses],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

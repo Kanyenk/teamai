@@ -77,12 +77,20 @@ class ProductRepository:
         row = cur.fetchone()
         return self._row_to_product(row) if row else None
 
-    def count(self, organisation_id: str | None = None) -> int:
+    def count(
+        self,
+        organisation_id: str | None = None,
+        search: str | None = None,
+    ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_products WHERE is_active = 1"
         params: list = []
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
+        if search:
+            query += " AND (name LIKE ? OR sku LIKE ?)"
+            like = f"%{search}%"
+            params.extend([like, like])
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

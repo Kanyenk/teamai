@@ -96,6 +96,8 @@ class StockLevelRepository:
         organisation_id: str | None = None,
         order_by: str = "created_at",
         direction: str = "asc",
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> list[StockLevel]:
         if order_by not in {"created_at", "quantity"}:
             raise ValueError(
@@ -112,6 +114,12 @@ class StockLevelRepository:
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
@@ -135,12 +143,23 @@ class StockLevelRepository:
         self.conn.commit()
         return cur.rowcount > 0
 
-    def count(self, organisation_id: str | None = None) -> int:
+    def count(
+        self,
+        organisation_id: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+    ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_stock_levels WHERE 1=1"
         params: list = []
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

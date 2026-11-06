@@ -161,6 +161,8 @@ class StockMovementRepository:
         movement_type: str | None = None,
         order_by: str = "created_at",
         direction: str = "asc",
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> list[StockMovement]:
         if order_by not in {"created_at", "quantity", "movement_type"}:
             raise ValueError(
@@ -187,6 +189,12 @@ class StockMovementRepository:
         if movement_type:
             query += " AND movement_type = ?"
             params.append(movement_type)
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
@@ -197,6 +205,8 @@ class StockMovementRepository:
         product_id: str | None = None,
         warehouse_id: str | None = None,
         movement_type: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_stock_movements WHERE 1=1"
         params: list = []
@@ -209,6 +219,12 @@ class StockMovementRepository:
         if movement_type:
             query += " AND movement_type = ?"
             params.append(movement_type)
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

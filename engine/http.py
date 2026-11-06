@@ -195,17 +195,23 @@ class HttpHandler(BaseHTTPRequestHandler):
                         product_id = query.get("product_id", [None])[0]
                         warehouse_id = query.get("warehouse_id", [None])[0]
                         movement_type = query.get("movement_type", [None])[0]
+                        created_from = query.get("created_from", [None])[0]
+                        created_to = query.get("created_to", [None])[0]
                         movements = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             product_id=product_id,
                             warehouse_id=warehouse_id,
                             movement_type=movement_type,
+                            created_from=created_from,
+                            created_to=created_to,
                         )
                         total = repo.count(
                             product_id=product_id,
                             warehouse_id=warehouse_id,
                             movement_type=movement_type,
+                            created_from=created_from,
+                            created_to=created_to,
                         )
                         self._send_json(200, {
                             "items": [m.to_dict() for m in movements],
@@ -238,12 +244,20 @@ class HttpHandler(BaseHTTPRequestHandler):
                         direction = query.get("direction", ["asc"])[0]
                         search = query.get("search", [None])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
+                        created_from = query.get("created_from", [None])[0]
+                        created_to = query.get("created_to", [None])[0]
                         levels = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
+                            created_from=created_from,
+                            created_to=created_to,
                         )
-                        total = repo.count(organisation_id=organisation_id)
+                        total = repo.count(
+                            organisation_id=organisation_id,
+                            created_from=created_from,
+                            created_to=created_to,
+                        )
                         self._send_json(200, {
                             "items": [l.to_dict() for l in levels],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

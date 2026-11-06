@@ -593,3 +593,75 @@ class TestProductDateFilters(unittest.TestCase):
             data = json.loads(r.read())
         self.assertEqual(data["pagination"]["total"], 0)
         self.assertEqual(data["items"], [])
+
+
+class TestMovementDateFilters(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_movement(self):
+        product = json.dumps({
+            "organisation_id": "org-1",
+            "sku": "SKU-MVT-DATE",
+            "name": "Produit Mvt",
+            "unit": "unité",
+            "default_price": 5.0,
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/products", data=product, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            product_id = json.loads(r.read())["item"]["id"]
+
+        warehouse = json.dumps({
+            "organisation_id": "org-1",
+            "code": "WH-MVT-DATE",
+            "name": "Entrepôt Mvt",
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/warehouses", data=warehouse, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            warehouse_id = json.loads(r.read())["item"]["id"]
+
+        movement = json.dumps({
+            "organisation_id": "org-1",
+            "product_id": product_id,
+            "warehouse_id": warehouse_id,
+            "movement_type": "in",
+            "quantity": 10,
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/stock-movements", data=movement, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+
+    def test_movements_created_from_past(self):
+        self._create_movement()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements?created_from=2020-01-01",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["pagination"]["total"], 1)
+
+    def test_movements_created_to_past(self):
+        self._create_movement()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements?created_to=2000-01-01",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["pagination"]["total"], 0)
+        self.assertEqual(data["items"], [])

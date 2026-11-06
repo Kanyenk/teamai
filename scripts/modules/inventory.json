@@ -1,0 +1,14 @@
+{
+  "entity": "Inventory",
+  "table": "inventories",
+  "prefix": "inv",
+  "plural": "inventories",
+  "fields": [
+    {"name": "organisation_id", "type": "str", "required": true, "test_value": "\"org-1\""},
+    {"name": "warehouse_id", "type": "str", "required": true, "test_value": "\"wh-1\""},
+    {"name": "product_id", "type": "str", "required": true, "test_value": "\"prod-1\""},
+    {"name": "counted_quantity", "type": "int", "required": true, "min": 0, "test_value": "5"},
+    {"name": "expected_quantity", "type": "int", "required": true, "min": 0, "test_value": "4"},
+    {"name": "note", "type": "str", "required": false, "default": "\"\"", "test_value": "\"Inventaire annuel\""}
+  ]
+}

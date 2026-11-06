@@ -117,3 +117,11 @@ La documentation des endpoints HTTP des ajustements est disponible dans [docs/ap
 - POST /api/v1/wms/stock-adjustments : créer un ajustement (201).
 - GET /api/v1/wms/stock-adjustments : lister par organisation (200).
 - GET /api/v1/wms/stock-adjustments/{id} : consulter (200/404).
+
+## API Inventory (Inventory)
+
+La documentation est disponible dans [docs/api_inventory.md](docs/api_inventory.md).
+
+- POST /api/v1/wms/inventories : créer (201).
+- GET /api/v1/wms/inventories : lister (200).
+- GET /api/v1/wms/inventories/{id} : consulter (200/404).

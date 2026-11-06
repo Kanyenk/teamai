@@ -1,6 +1,7 @@
 """Repository pour les produits du WMS."""
 
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, List, Optional
 from uuid import uuid4
@@ -45,6 +46,11 @@ class ProductRepository:
         if not isinstance(product, Product):
             raise ProductError("Doit être un objet Product")
         product.id = product.id or f"prod-{uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc).isoformat()
+        if not product.created_at:
+            product.created_at = now
+        if not product.updated_at:
+            product.updated_at = now
         with self.conn:
             self.conn.execute(
                 """

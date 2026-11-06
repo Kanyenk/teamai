@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from xohive.wms.domain.stock_movement import StockMovement
+from xohive.wms.domain.stock_movement import StockMovement, VALID_MOVEMENT_TYPES
 from xohive.wms.domain.stock_level import StockLevel
 from xohive.wms.repository.stock_level_repository import StockLevelRepository
 from xohive.wms.repository.product_repository import ProductRepository
@@ -152,15 +152,36 @@ class StockMovementRepository:
         ).fetchall()
         return [self._row_to_movement(r) for r in rows]
 
-    def list(self, limit: int = 50, offset: int = 0) -> list[StockMovement]:
+    def list(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        product_id: str | None = None,
+        warehouse_id: str | None = None,
+        movement_type: str | None = None,
+    ) -> list[StockMovement]:
         if limit < 1 or limit > 100:
             raise ValueError("limit must be between 1 and 100")
         if offset < 0:
             raise ValueError("offset must be >= 0")
-        rows = self.conn.execute(
-            "SELECT * FROM wms_stock_movements ORDER BY created_at LIMIT ? OFFSET ?",
-            (limit, offset),
-        ).fetchall()
+        if movement_type is not None and movement_type not in VALID_MOVEMENT_TYPES:
+            raise ValueError(
+                f"movement_type must be one of {sorted(VALID_MOVEMENT_TYPES)}"
+            )
+        query = "SELECT * FROM wms_stock_movements WHERE 1=1"
+        params: list = []
+        if product_id:
+            query += " AND product_id = ?"
+            params.append(product_id)
+        if warehouse_id:
+            query += " AND warehouse_id = ?"
+            params.append(warehouse_id)
+        if movement_type:
+            query += " AND movement_type = ?"
+            params.append(movement_type)
+        query += " ORDER BY created_at LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = self.conn.execute(query, params).fetchall()
         return [self._row_to_movement(r) for r in rows]
 
     @staticmethod

@@ -247,3 +247,63 @@ class TestStockMovementPagination(unittest.TestCase):
     def test_list_negative_offset_raises(self):
         with self.assertRaises(ValueError):
             self.repo.list(offset=-1)
+
+
+class TestStockMovementFilters(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = Path(self.tmp.name) / "test.db"
+        self.repo = StockMovementRepository(self.db)
+        self.products = ProductRepository(self.db)
+        self.warehouses = WarehouseRepository(self.db)
+        self.product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-FILT", name="P",
+        ))
+        self.warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-FILT", name="W",
+        ))
+
+    def tearDown(self):
+        self.repo.close()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _movement(self, mtype, qty):
+        return StockMovement(
+            organisation_id="org-1",
+            product_id=self.product.id,
+            warehouse_id=self.warehouse.id,
+            movement_type=mtype, quantity=qty,
+        )
+
+    def test_filter_by_movement_type(self):
+        self.repo.create(self._movement("in", 10))
+        self.repo.create(self._movement("adjustment", 5))
+        result = self.repo.list(movement_type="in")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].movement_type, "in")
+
+    def test_filter_by_product(self):
+        self.repo.create(self._movement("in", 10))
+        result = self.repo.list(product_id=self.product.id)
+        self.assertEqual(len(result), 1)
+        result = self.repo.list(product_id="inexistant")
+        self.assertEqual(len(result), 0)
+
+    def test_filter_by_warehouse(self):
+        self.repo.create(self._movement("in", 10))
+        result = self.repo.list(warehouse_id=self.warehouse.id)
+        self.assertEqual(len(result), 1)
+
+    def test_invalid_movement_type_filter_raises(self):
+        with self.assertRaises(ValueError):
+            self.repo.list(movement_type="unknown")
+
+    def test_filters_combined_with_pagination(self):
+        for _ in range(6):
+            self.repo.create(self._movement("in", 1))
+        result = self.repo.list(
+            movement_type="in", limit=4, offset=2
+        )
+        self.assertEqual(len(result), 4)

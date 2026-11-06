@@ -72,9 +72,14 @@ class WarehouseRepository:
         ).fetchone()
         return self._row_to_warehouse(row) if row else None
 
-    def list(self) -> list[Warehouse]:
+    def list(self, limit: int = 50, offset: int = 0) -> list[Warehouse]:
+        if limit < 1 or limit > 100:
+            raise ValueError("limit must be between 1 and 100")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
         rows = self.conn.execute(
-            "SELECT * FROM wms_warehouses ORDER BY created_at"
+            "SELECT * FROM wms_warehouses ORDER BY created_at LIMIT ? OFFSET ?",
+            (limit, offset),
         ).fetchall()
         return [self._row_to_warehouse(r) for r in rows]
 

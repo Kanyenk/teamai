@@ -139,7 +139,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             return
                         self._send_json(200, {"item": product.to_dict()})
                     else:
-                        products = repo.list()
+                        from urllib.parse import urlparse, parse_qs
+                        query = parse_qs(urlparse(self.path).query)
+                        limit = int(query.get("limit", ["50"])[0])
+                        offset = int(query.get("offset", ["0"])[0])
+                        products = repo.list(limit=limit, offset=offset)
                         self._send_json(200, {"items": [p.to_dict() for p in products]})
                 finally:
                     repo.close()
@@ -175,7 +179,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             return
                         self._send_json(200, {"item": level.to_dict()})
                     else:
-                        levels = repo.list()
+                        from urllib.parse import urlparse, parse_qs
+                        query = parse_qs(urlparse(self.path).query)
+                        limit = int(query.get("limit", ["50"])[0])
+                        offset = int(query.get("offset", ["0"])[0])
+                        levels = repo.list(limit=limit, offset=offset)
                         self._send_json(200, {"items": [l.to_dict() for l in levels]})
                 finally:
                     repo.close()
@@ -191,7 +199,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             return
                         self._send_json(200, {"item": warehouse.to_dict()})
                     else:
-                        warehouses = repo.list()
+                        from urllib.parse import urlparse, parse_qs
+                        query = parse_qs(urlparse(self.path).query)
+                        limit = int(query.get("limit", ["50"])[0])
+                        offset = int(query.get("offset", ["0"])[0])
+                        warehouses = repo.list(limit=limit, offset=offset)
                         self._send_json(200, {"items": [w.to_dict() for w in warehouses]})
                 finally:
                     repo.close()

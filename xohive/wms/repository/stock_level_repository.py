@@ -89,9 +89,14 @@ class StockLevelRepository:
         ).fetchall()
         return [self._row_to_level(r) for r in rows]
 
-    def list(self) -> list[StockLevel]:
+    def list(self, limit: int = 50, offset: int = 0) -> list[StockLevel]:
+        if limit < 1 or limit > 100:
+            raise ValueError("limit must be between 1 and 100")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
         rows = self.conn.execute(
-            "SELECT * FROM wms_stock_levels ORDER BY created_at"
+            "SELECT * FROM wms_stock_levels ORDER BY created_at LIMIT ? OFFSET ?",
+            (limit, offset),
         ).fetchall()
         return [self._row_to_level(r) for r in rows]
 

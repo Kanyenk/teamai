@@ -91,6 +91,10 @@ class ProductRepository:
         offset: int = 0,
         limit: int = 50,
     ) -> List[Product]:
+        if limit < 1 or limit > 100:
+            raise ValueError("limit must be between 1 and 100")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
         query = "SELECT * FROM wms_products WHERE is_active = 1"
         params: list = []
         if organisation_id:

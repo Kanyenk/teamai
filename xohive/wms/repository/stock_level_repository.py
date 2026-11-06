@@ -98,6 +98,8 @@ class StockLevelRepository:
         direction: str = "asc",
         created_from: str | None = None,
         created_to: str | None = None,
+        min_quantity: int | None = None,
+        max_quantity: int | None = None,
     ) -> list[StockLevel]:
         if order_by not in {"created_at", "quantity"}:
             raise ValueError(
@@ -120,6 +122,12 @@ class StockLevelRepository:
         if created_to:
             query += " AND created_at <= ?"
             params.append(created_to)
+        if min_quantity is not None:
+            query += " AND quantity >= ?"
+            params.append(min_quantity)
+        if max_quantity is not None:
+            query += " AND quantity <= ?"
+            params.append(max_quantity)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
@@ -148,6 +156,8 @@ class StockLevelRepository:
         organisation_id: str | None = None,
         created_from: str | None = None,
         created_to: str | None = None,
+        min_quantity: int | None = None,
+        max_quantity: int | None = None,
     ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_stock_levels WHERE 1=1"
         params: list = []
@@ -160,6 +170,12 @@ class StockLevelRepository:
         if created_to:
             query += " AND created_at <= ?"
             params.append(created_to)
+        if min_quantity is not None:
+            query += " AND quantity >= ?"
+            params.append(min_quantity)
+        if max_quantity is not None:
+            query += " AND quantity <= ?"
+            params.append(max_quantity)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

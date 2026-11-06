@@ -246,17 +246,28 @@ class HttpHandler(BaseHTTPRequestHandler):
                         organisation_id = query.get("organisation_id", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        min_quantity = query.get("min_quantity", [None])[0]
+                        max_quantity = query.get("max_quantity", [None])[0]
+                        try:
+                            min_quantity = int(min_quantity) if min_quantity is not None else None
+                            max_quantity = int(max_quantity) if max_quantity is not None else None
+                        except ValueError:
+                            return self._send_error(400, "min_quantity and max_quantity must be integers")
                         levels = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
                             created_from=created_from,
                             created_to=created_to,
+                            min_quantity=min_quantity,
+                            max_quantity=max_quantity,
                         )
                         total = repo.count(
                             organisation_id=organisation_id,
                             created_from=created_from,
                             created_to=created_to,
+                            min_quantity=min_quantity,
+                            max_quantity=max_quantity,
                         )
                         self._send_json(200, {
                             "items": [l.to_dict() for l in levels],

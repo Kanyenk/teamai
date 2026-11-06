@@ -157,6 +157,16 @@ class TestBarcodeHttpApi(unittest.TestCase):
         self.assertIn(b"html5-qrcode", raw)
 
 
+    def test_scan_history(self):
+        status, body = self._request("GET", "/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
+        self.assertEqual(status, 200)
+        self.assertIn("items", body)
+
+    def test_scan_history_missing_org(self):
+        status, _ = self._request("GET", "/api/v1/wms/scan-history")
+        self.assertEqual(status, 400)
+
+
 
 if __name__ == "__main__":
     unittest.main()

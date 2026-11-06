@@ -156,6 +156,26 @@ form.addEventListener("submit", async (e) => {
         self.end_headers()
         self.wfile.write(body)
 
+    def _handle_scan_history(self):
+        from urllib.parse import parse_qs, urlparse
+        query = parse_qs(urlparse(self.path).query)
+        organisation_id = query.get("organisation_id", [None])[0]
+        limit = int(query.get("limit", ["10"])[0])
+        if not organisation_id:
+            return self._send_error(400, "organisation_id requis")
+        from xohive.domain.audit_event_repository import AuditEventRepository
+        repo = AuditEventRepository(self.store.db_path)
+        try:
+            events = repo.list(limit=limit)
+        finally:
+            repo.close()
+        scans = [
+            e for e in events
+            if getattr(e, "organisation_id", None) == organisation_id
+            and "scanned_code" in (e.old_values or {})
+        ]
+        self._send_json(200, {"items": [e.to_dict() for e in scans]})
+
     def _send_wms_dashboard(self):
         """Page dashboard WMS minimale avec liens vers les exports CSV."""
         html = """<!DOCTYPE html>
@@ -250,6 +270,8 @@ form.addEventListener("submit", async (e) => {
                 self._send_error(404, "Not Found")
 
     def _handle_wms_get(self, path: str):
+        if path.split("?")[0] == "/api/v1/wms/scan-history":
+            return self._handle_scan_history()
         """Gère les requêtes GET pour l'API WMS."""
         from urllib.parse import urlparse
         path = urlparse(path).path

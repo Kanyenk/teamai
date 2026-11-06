@@ -50,6 +50,22 @@ class HttpHandler(BaseHTTPRequestHandler):
     def _send_error(self, status: int, message: str):
         self._send_json(status, {"error": message})
 
+    def _send_csv(self, status: int, filename: str, header: list, rows: list):
+        import csv
+        import io
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(header)
+        writer.writerows(rows)
+        body = buf.getvalue().encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _read_body(self) -> Dict:
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
@@ -166,6 +182,17 @@ class HttpHandler(BaseHTTPRequestHandler):
                             created_from=created_from,
                             created_to=created_to,
                         )
+                        if query.get("format", ["json"])[0] == "csv":
+                            rows = [
+                                [p.id, p.sku, p.name, p.unit, p.default_price, p.created_at]
+                                for p in products
+                            ]
+                            self._send_csv(
+                                200, "products.csv",
+                                ["id", "sku", "name", "unit", "default_price", "created_at"],
+                                rows,
+                            )
+                            return
                         self._send_json(200, {
                             "items": [p.to_dict() for p in products],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
@@ -323,6 +350,17 @@ class HttpHandler(BaseHTTPRequestHandler):
                             created_from=created_from,
                             created_to=created_to,
                         )
+                        if query.get("format", ["json"])[0] == "csv":
+                            rows = [
+                                [w.id, w.code, w.name, w.address, w.created_at]
+                                for w in warehouses
+                            ]
+                            self._send_csv(
+                                200, "warehouses.csv",
+                                ["id", "code", "name", "address", "created_at"],
+                                rows,
+                            )
+                            return
                         self._send_json(200, {
                             "items": [w.to_dict() for w in warehouses],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

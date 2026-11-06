@@ -835,3 +835,58 @@ class TestMovementQuantityFilters(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             urllib.request.urlopen(req, timeout=10)
         self.assertEqual(ctx.exception.code, 400)
+
+
+class TestCsvExport(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_warehouses(self):
+        for code in ["WH-CSV-1", "WH-CSV-2"]:
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "code": code,
+                "name": f"Entrepôt {code}",
+            }).encode()
+            req = urllib.request.Request(self.base + "/api/v1/wms/warehouses", data=body, headers=self.headers, method="POST")
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+
+    def test_warehouses_csv_export(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?format=csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.headers["Content-Type"], "text/csv; charset=utf-8")
+            self.assertIn("warehouses.csv", r.headers["Content-Disposition"])
+            body = r.read().decode("utf-8")
+        lines = body.strip().splitlines()
+        self.assertEqual(lines[0], "id,code,name,address,created_at")
+        self.assertEqual(len(lines), 3)
+        self.assertIn("WH-CSV-1", body)
+        self.assertIn("WH-CSV-2", body)
+
+    def test_warehouses_json_default(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.headers["Content-Type"], "application/json")

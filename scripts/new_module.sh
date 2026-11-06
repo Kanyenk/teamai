@@ -29,11 +29,12 @@ fields = spec["fields"]
 
 def default_repr(f):
     if "default" in f:
-        return f["default"]
+        return repr(f["default"]) if isinstance(f["default"], str) else str(f["default"])
     return '""' if f["type"] == "str" else "0" if f["type"] == "int" else "0.0" if f["type"] == "float" else "False"
 
 def test_value(f):
-    return f.get("test_value") or default_repr(f)
+    v = f.get("test_value") or default_repr(f)
+    return repr(v) if isinstance(v, str) else str(v)
 
 def cast_expr(f, var):
     t = f["type"]
@@ -43,7 +44,7 @@ def cast_expr(f, var):
         return f'float({var}["{f["name"]}"])'
     return f'{var}["{f["name"]}"]'
 
-org_test = next((test_value(f) for f in fields if f["name"] == "organisation_id"), '"test"')
+org_test = next(('"' + str(f.get("test_value") or f.get("default") or "") + '"' for f in fields if f["name"] == "organisation_id"), '"test"')
 
 # ─── Entité ───
 entity_fields = []

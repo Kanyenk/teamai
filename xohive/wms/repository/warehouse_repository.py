@@ -80,6 +80,8 @@ class WarehouseRepository:
         order_by: str = "created_at",
         direction: str = "asc",
         search: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> list[Warehouse]:
         if order_by not in {"created_at", "name", "code"}:
             raise ValueError(
@@ -100,6 +102,12 @@ class WarehouseRepository:
             query += " AND (name LIKE ? OR code LIKE ?)"
             like = f"%{search}%"
             params.extend([like, like])
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
@@ -146,6 +154,8 @@ class WarehouseRepository:
         self,
         organisation_id: str | None = None,
         search: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_warehouses WHERE 1=1"
         params: list = []
@@ -156,6 +166,12 @@ class WarehouseRepository:
             query += " AND (name LIKE ? OR code LIKE ?)"
             like = f"%{search}%"
             params.extend([like, like])
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

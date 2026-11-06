@@ -95,6 +95,46 @@ class TestBarcodeHttpApi(unittest.TestCase):
         self.assertEqual(status, 400)
 
 
+    def _request_raw(self, method, path, payload=None):
+        data = json.dumps(payload).encode() if payload is not None else None
+        req = urllib.request.Request(self.base + path, data=data, method=method, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return resp.status, resp.headers.get("Content-Type"), resp.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers.get("Content-Type"), e.read()
+
+    def test_label_svg(self):
+        status, body = self._request("POST", "/api/v1/wms/barcodes", {
+            "organisation_id": "org-1",
+            "product_id": "prod-1",
+            "code": "ABC-123",
+            "type": "code128",
+            "label": "Test",
+        })
+        obj_id = body["item"]["id"]
+        status, content_type, raw = self._request_raw("GET", f"/api/v1/wms/barcodes/{obj_id}/label")
+        self.assertEqual(status, 200)
+        self.assertIn("svg", content_type)
+        self.assertIn(b"<svg", raw)
+
+    def test_label_not_found(self):
+        status, _, _ = self._request_raw("GET", "/api/v1/wms/barcodes/brc-inexistant/label")
+        self.assertEqual(status, 404)
+
+    def test_label_invalid_type(self):
+        status, body = self._request("POST", "/api/v1/wms/barcodes", {
+            "organisation_id": "org-1",
+            "product_id": "prod-1",
+            "code": "ABC-123",
+            "type": "invalidtype",
+            "label": "Test",
+        })
+        obj_id = body["item"]["id"]
+        status, _, _ = self._request_raw("GET", f"/api/v1/wms/barcodes/{obj_id}/label")
+        self.assertEqual(status, 400)
+
+
 
 if __name__ == "__main__":
     unittest.main()

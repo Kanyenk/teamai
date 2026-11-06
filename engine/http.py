@@ -199,6 +199,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                     return
                 if len(segments) > 4 and segments[4] == "lookup":
                     return self._send_error(400, "code requis")
+                if len(segments) > 5 and segments[5] == "label":
+                    from engine.barcode_label import generate_label_svg
+                    obj = repo.get(segments[4])
+                    if obj is None:
+                        return self._send_error(404, "Barcode not found")
+                    try:
+                        svg = generate_label_svg(obj.code, obj.type)
+                    except Exception as e:
+                        return self._send_error(400, str(e))
+                    body = svg.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/svg+xml")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 obj_id = segments[4] if len(segments) > 4 else None
                 if obj_id:
                     obj = repo.get(obj_id)

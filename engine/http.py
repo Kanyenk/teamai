@@ -282,6 +282,34 @@ fetch("/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
                 self._send_error(404, "Not Found")
 
     def _handle_wms_get(self, path: str):
+        if path.split("?")[0] == "/api/v1/wms/stock-locations":
+            from urllib.parse import parse_qs, urlparse
+            from xohive.wms.repository.stock_location_repository import StockLocationRepository
+            query = parse_qs(urlparse(self.path).query)
+            repo = StockLocationRepository(self.store.db_path)
+            try:
+                organisation_id = query.get("organisation_id", [None])[0]
+                warehouse_id = query.get("warehouse_id", [None])[0]
+                if not organisation_id:
+                    return self._send_error(400, "organisation_id requis")
+                limit = int(query.get("limit", ["50"])[0])
+                offset = int(query.get("offset", ["0"])[0])
+                items = repo.list(organisation_id=organisation_id, warehouse_id=warehouse_id, limit=limit, offset=offset)
+            finally:
+                repo.close()
+            return self._send_json(200, {"items": [i.to_dict() for i in items]})
+        if path.startswith("/api/v1/wms/stock-locations/"):
+            from xohive.wms.repository.stock_location_repository import StockLocationRepository
+            repo = StockLocationRepository(self.store.db_path)
+            try:
+                loc_id = path.split("/")[5] if len(path.split("/")) > 5 else None
+                if loc_id:
+                    loc = repo.get_by_id(loc_id)
+                    if loc is None:
+                        return self._send_error(404, "StockLocation not found")
+                    return self._send_json(200, {"item": loc.to_dict()})
+            finally:
+                repo.close()
         if path.split("?")[0] == "/api/v1/wms/scan-history":
             return self._handle_scan_history()
         """Gère les requêtes GET pour l'API WMS."""
@@ -1179,6 +1207,24 @@ fetch("/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
                     audit_repo.close()
 
                 self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "stock-locations":
+                from xohive.wms.repository.stock_location_repository import StockLocationRepository
+                from xohive.wms.domain.stock_location import StockLocation
+                repo = StockLocationRepository(self.store.db_path)
+                try:
+                    loc = StockLocation(
+                        organisation_id=body.get("organisation_id", ""),
+                        warehouse_id=body.get("warehouse_id", ""),
+                        code=body.get("code", ""),
+                        name=body.get("name", ""),
+                        zone=body.get("zone", ""),
+                    )
+                    result = repo.create(loc)
+                    self._send_json(201, {"item": result.to_dict()})
+                except ValueError as exc:
+                    return self._send_error(400, str(exc))
+                finally:
+                    repo.close()
             elif len(segments) >= 4 and segments[3] == "scan":
                 from engine.barcode_repository import BarcodeRepository
                 from xohive.wms.repository.stock_movement_repository import StockMovementRepository

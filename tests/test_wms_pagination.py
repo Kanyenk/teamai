@@ -956,3 +956,49 @@ class TestMovementCsvExport(unittest.TestCase):
         self.assertEqual(len(lines), 2)
         self.assertIn("SKU-CSV-MVT"[:0] or "in", body)
         self.assertIn(",7,", body)
+
+
+class TestDateValidation(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def test_warehouses_invalid_created_from_returns_400(self):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?created_from=abc",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=10)
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_warehouses_invalid_created_to_returns_400(self):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?created_to=2020-13-45",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=10)
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_products_invalid_created_from_returns_400(self):
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/products?created_from=not-a-date",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=10)
+        self.assertEqual(ctx.exception.code, 400)

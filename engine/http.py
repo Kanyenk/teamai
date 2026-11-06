@@ -50,6 +50,14 @@ class HttpHandler(BaseHTTPRequestHandler):
     def _send_error(self, status: int, message: str):
         self._send_json(status, {"error": message})
 
+    def _valid_date(self, value: str) -> bool:
+        from datetime import datetime
+        try:
+            datetime.fromisoformat(value)
+            return True
+        except (TypeError, ValueError):
+            return False
+
     def _send_csv(self, status: int, filename: str, header: list, rows: list):
         import csv
         import io
@@ -168,6 +176,9 @@ class HttpHandler(BaseHTTPRequestHandler):
                         organisation_id = query.get("organisation_id", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        for _d in (created_from, created_to):
+                            if _d and not self._valid_date(_d):
+                                return self._send_error(400, "created_from and created_to must be ISO dates (YYYY-MM-DD)")
                         products = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
@@ -224,6 +235,9 @@ class HttpHandler(BaseHTTPRequestHandler):
                         movement_type = query.get("movement_type", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        for _d in (created_from, created_to):
+                            if _d and not self._valid_date(_d):
+                                return self._send_error(400, "created_from and created_to must be ISO dates (YYYY-MM-DD)")
                         min_quantity = query.get("min_quantity", [None])[0]
                         max_quantity = query.get("max_quantity", [None])[0]
                         try:
@@ -289,6 +303,9 @@ class HttpHandler(BaseHTTPRequestHandler):
                         organisation_id = query.get("organisation_id", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        for _d in (created_from, created_to):
+                            if _d and not self._valid_date(_d):
+                                return self._send_error(400, "created_from and created_to must be ISO dates (YYYY-MM-DD)")
                         min_quantity = query.get("min_quantity", [None])[0]
                         max_quantity = query.get("max_quantity", [None])[0]
                         try:
@@ -346,6 +363,9 @@ class HttpHandler(BaseHTTPRequestHandler):
                         organisation_id = query.get("organisation_id", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        for _d in (created_from, created_to):
+                            if _d and not self._valid_date(_d):
+                                return self._send_error(400, "created_from and created_to must be ISO dates (YYYY-MM-DD)")
                         warehouses = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,

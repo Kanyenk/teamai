@@ -540,3 +540,56 @@ class TestDateFilters(unittest.TestCase):
             data = json.loads(r.read())
         codes = [w["code"] for w in data["items"]]
         self.assertEqual(codes, ["WH-DATE-0"])
+
+
+class TestProductDateFilters(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_products(self):
+        for i in range(2):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "sku": f"SKU-DATE-{i}",
+                "name": f"Produit Date {i}",
+                "unit": "unité",
+                "default_price": 10.0 + i,
+            }).encode()
+            req = urllib.request.Request(self.base + "/api/v1/wms/products", data=body, headers=self.headers, method="POST")
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+
+    def test_products_created_from_past(self):
+        self._create_products()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/products?created_from=2020-01-01",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["pagination"]["total"], 2)
+
+    def test_products_created_to_past(self):
+        self._create_products()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/products?created_to=2000-01-01",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["pagination"]["total"], 0)
+        self.assertEqual(data["items"], [])

@@ -81,6 +81,8 @@ class ProductRepository:
         self,
         organisation_id: str | None = None,
         search: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_products WHERE is_active = 1"
         params: list = []
@@ -91,6 +93,12 @@ class ProductRepository:
             query += " AND (name LIKE ? OR sku LIKE ?)"
             like = f"%{search}%"
             params.extend([like, like])
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 
@@ -110,6 +118,8 @@ class ProductRepository:
         order_by: str = "created_at",
         direction: str = "asc",
         search: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
     ) -> List[Product]:
         if order_by not in {"created_at", "name", "sku", "default_price"}:
             raise ValueError(
@@ -130,6 +140,12 @@ class ProductRepository:
             query += " AND (name LIKE ? OR sku LIKE ?)"
             like = f"%{search}%"
             params.extend([like, like])
+        if created_from:
+            query += " AND created_at >= ?"
+            params.append(created_from)
+        if created_to:
+            query += " AND created_at <= ?"
+            params.append(created_to)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         cur = self.conn.execute(query, params)

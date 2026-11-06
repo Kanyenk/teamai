@@ -150,13 +150,22 @@ class HttpHandler(BaseHTTPRequestHandler):
                         direction = query.get("direction", ["asc"])[0]
                         search = query.get("search", [None])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
+                        created_from = query.get("created_from", [None])[0]
+                        created_to = query.get("created_to", [None])[0]
                         products = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
-                            search=search
+                            search=search,
+                            created_from=created_from,
+                            created_to=created_to,
                         )
-                        total = repo.count(organisation_id=organisation_id, search=search)
+                        total = repo.count(
+                            organisation_id=organisation_id,
+                            search=search,
+                            created_from=created_from,
+                            created_to=created_to,
+                        )
                         self._send_json(200, {
                             "items": [p.to_dict() for p in products],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

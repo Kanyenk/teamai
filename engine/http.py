@@ -189,6 +189,18 @@ form.addEventListener("submit", async (e) => {
 <li><a href="/api/v1/wms/stock-alerts?format=csv">Export CSV alertes</a></li>
 </ul>
 <p>Note : les exports nécessitent un token Bearer valide.</p>
+<a href="/wms/scan">Scanner un article</a>
+<h2>Derniers scans</h2>
+<div id="recent-scans">Chargement…</div>
+<script>
+fetch("/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
+  .then(r => r.json())
+  .then(data => {
+    const items = data.items || [];
+    document.getElementById("recent-scans").textContent =
+      items.length ? JSON.stringify(items, null, 2) : "Aucun scan récent.";
+  });
+</script>
 </body>
 </html>"""
         self._send_html(200, html)

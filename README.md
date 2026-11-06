@@ -88,3 +88,12 @@ Variables d'environnement :
 |---|---|---|
 | `TEAMAI_DB_PATH` | Chemin vers la base SQLite | `/app/data/teamai.db` |
 | `TEAMAI_TOKENS` | Liste des tokens valides (séparés par `,`) | `tok_123,dev-token` |
+
+## API Shipments (Expéditions)
+
+La documentation des endpoints HTTP des expéditions est disponible dans [docs/api_shipments.md](docs/api_shipments.md).
+
+- POST /api/v1/wms/shipments : créer une expédition (201).
+- GET /api/v1/wms/shipments : lister par organisation (200).
+- GET /api/v1/wms/shipments/{id} : consulter (200/404).
+- POST /api/v1/wms/shipments/{id}/ship : expédier (200/400).

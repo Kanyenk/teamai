@@ -97,3 +97,15 @@ La documentation des endpoints HTTP des expéditions est disponible dans [docs/a
 - GET /api/v1/wms/shipments : lister par organisation (200).
 - GET /api/v1/wms/shipments/{id} : consulter (200/404).
 - POST /api/v1/wms/shipments/{id}/ship : expédier (200/400).
+
+## API Returns (Retours clients)
+
+La documentation des endpoints HTTP des retours est disponible dans [docs/api_returns.md](docs/api_returns.md).
+
+- POST /api/v1/wms/returns : créer un retour (201).
+- GET /api/v1/wms/returns : lister par organisation (200).
+- GET /api/v1/wms/returns/{id} : consulter (200/404).
+- POST /api/v1/wms/returns/{id}/request : demander (200/400).
+- POST /api/v1/wms/returns/{id}/receive : réceptionner (200/400).
+- POST /api/v1/wms/returns/{id}/refund : rembourser (200/400).
+- POST /api/v1/wms/returns/{id}/cancel : annuler (200/400).

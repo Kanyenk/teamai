@@ -251,6 +251,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             min_quantity=min_quantity,
                             max_quantity=max_quantity,
                         )
+                        if query.get("format", ["json"])[0] == "csv":
+                            header = ["id", "organisation_id", "product_id", "warehouse_id", "movement_type", "quantity", "created_at"]
+                            rows = [[m.to_dict().get(k) for k in header] for m in movements]
+                            self._send_csv(200, "stock_movements.csv", header, rows)
+                            return
                         self._send_json(200, {
                             "items": [m.to_dict() for m in movements],
                             "sort": {"order_by": order_by, "direction": direction},
@@ -307,6 +312,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                             min_quantity=min_quantity,
                             max_quantity=max_quantity,
                         )
+                        if query.get("format", ["json"])[0] == "csv":
+                            header = ["id", "organisation_id", "product_id", "warehouse_id", "quantity", "created_at"]
+                            rows = [[l.to_dict().get(k) for k in header] for l in levels]
+                            self._send_csv(200, "stock_levels.csv", header, rows)
+                            return
                         self._send_json(200, {
                             "items": [l.to_dict() for l in levels],
                             "pagination": {"total": total, "limit": limit, "offset": offset},

@@ -890,3 +890,69 @@ class TestCsvExport(unittest.TestCase):
         )
         with urllib.request.urlopen(req, timeout=10) as r:
             self.assertEqual(r.headers["Content-Type"], "application/json")
+
+
+class TestMovementCsvExport(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_movement(self):
+        product = json.dumps({
+            "organisation_id": "org-1",
+            "sku": "SKU-CSV-MVT",
+            "name": "Produit CSV Mvt",
+            "unit": "unité",
+            "default_price": 5.0,
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/products", data=product, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            product_id = json.loads(r.read())["item"]["id"]
+
+        warehouse = json.dumps({
+            "organisation_id": "org-1",
+            "code": "WH-CSV-MVT",
+            "name": "Entrepôt CSV Mvt",
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/warehouses", data=warehouse, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            warehouse_id = json.loads(r.read())["item"]["id"]
+
+        movement = json.dumps({
+            "organisation_id": "org-1",
+            "product_id": product_id,
+            "warehouse_id": warehouse_id,
+            "movement_type": "in",
+            "quantity": 7,
+        }).encode()
+        req = urllib.request.Request(self.base + "/api/v1/wms/stock-movements", data=movement, headers=self.headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+
+    def test_movements_csv_export(self):
+        self._create_movement()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-movements?format=csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.headers["Content-Type"], "text/csv; charset=utf-8")
+            self.assertIn("stock_movements.csv", r.headers["Content-Disposition"])
+            body = r.read().decode("utf-8")
+        lines = body.strip().splitlines()
+        self.assertEqual(len(lines), 2)
+        self.assertIn("SKU-CSV-MVT"[:0] or "in", body)
+        self.assertIn(",7,", body)

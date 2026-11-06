@@ -41,6 +41,11 @@ class ProductRepository:
                 )
                 """
             )
+        cols = [r[1] for r in self.conn.execute("PRAGMA table_info(wms_products)")]
+        if "alert_threshold" not in cols:
+            self.conn.execute(
+                "ALTER TABLE wms_products ADD COLUMN alert_threshold INTEGER"
+            )
 
     def create(self, product: Product) -> Product:
         if not isinstance(product, Product):
@@ -206,3 +211,35 @@ class ProductRepository:
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
+
+    def set_alert_threshold(self, product_id: str, threshold: int) -> Optional[int]:
+        """Définit le seuil d'alerte d'un produit. Retourne None si inconnu."""
+        cur = self.conn.execute(
+            "SELECT id FROM wms_products WHERE id = ? AND is_active = 1",
+            (product_id,),
+        )
+        if cur.fetchone() is None:
+            return None
+        with self.conn:
+            self.conn.execute(
+                "UPDATE wms_products SET alert_threshold = ?, updated_at = ? WHERE id = ?",
+                (threshold, datetime.now(timezone.utc).isoformat(), product_id),
+            )
+        return threshold
+
+    def get_alert_threshold(self, product_id: str) -> Optional[int]:
+        """Retourne le seuil d'alerte d'un produit, ou None."""
+        cur = self.conn.execute(
+            "SELECT alert_threshold FROM wms_products WHERE id = ? AND is_active = 1",
+            (product_id,),
+        )
+        row = cur.fetchone()
+        return row["alert_threshold"] if row else None
+
+    def list_alert_thresholds(self) -> dict:
+        """Retourne {product_id: threshold} pour les produits avec seuil."""
+        cur = self.conn.execute(
+            "SELECT id, alert_threshold FROM wms_products "
+            "WHERE alert_threshold IS NOT NULL AND is_active = 1"
+        )
+        return {r["id"]: r["alert_threshold"] for r in cur}

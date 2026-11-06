@@ -154,6 +154,17 @@ class HttpHandler(BaseHTTPRequestHandler):
             # segments = [api, v1, wms, products, (id)]
             if len(segments) >= 4 and segments[3] == "products":
                 product_id = segments[4] if len(segments) > 4 else None
+                if product_id and len(segments) >= 6 and segments[5] == "alert-threshold":
+                    repo = ProductRepository(self.store.db_path)
+                    try:
+                        if repo.get(product_id) is None:
+                            return self._send_error(404, "Product not found")
+                        self._send_json(200, {
+                            "product_id": product_id,
+                            "alert_threshold": repo.get_alert_threshold(product_id),
+                        })
+                    finally:
+                        repo.close()
                 repo = ProductRepository(self.store.db_path)
                 try:
                     if product_id:
@@ -412,15 +423,28 @@ class HttpHandler(BaseHTTPRequestHandler):
                     organisation_id = query.get("organisation_id", [None])[0]
                     limit = int(query.get("limit", ["50"])[0])
                     offset = int(query.get("offset", ["0"])[0])
-                    levels = repo.list(
-                        limit=limit, offset=offset,
-                        organisation_id=organisation_id,
-                        max_quantity=threshold - 1,
-                    )
-                    total = repo.count(
-                        organisation_id=organisation_id,
-                        max_quantity=threshold - 1,
-                    )
+                    thresholds = ProductRepository(self.store.db_path).list_alert_thresholds()
+                    max_effective = max([threshold] + list(thresholds.values())) if thresholds else threshold
+                    all_levels = []
+                    fetch_offset = 0
+                    while True:
+                        batch = repo.list(
+                            limit=100, offset=fetch_offset,
+                            organisation_id=organisation_id,
+                            max_quantity=max_effective - 1,
+                        )
+                        all_levels.extend(batch)
+                        if len(batch) < 100:
+                            break
+                        fetch_offset += 100
+                    def _effective(pid):
+                        return thresholds.get(pid, threshold)
+                    all_levels = [
+                        l for l in all_levels
+                        if l.to_dict()["quantity"] < _effective(l.to_dict()["product_id"])
+                    ]
+                    total = len(all_levels)
+                    levels = all_levels[offset:offset + limit]
                     if query.get("format", ["json"])[0] == "csv":
                         header = ["id", "organisation_id", "product_id", "warehouse_id", "quantity", "created_at"]
                         rows = [[l.to_dict().get(k) for k in header] for l in levels]
@@ -452,6 +476,22 @@ class HttpHandler(BaseHTTPRequestHandler):
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
             if len(segments) >= 4 and segments[3] == "products":
+                product_id = segments[4] if len(segments) > 4 else None
+                if product_id and len(segments) >= 6 and segments[5] == "alert-threshold":
+                    repo = ProductRepository(self.store.db_path)
+                    try:
+                        if repo.get(product_id) is None:
+                            return self._send_error(404, "Product not found")
+                        threshold = body.get("threshold")
+                        if not isinstance(threshold, int) or isinstance(threshold, bool) or threshold < 0:
+                            return self._send_error(400, "threshold must be a non-negative integer")
+                        repo.set_alert_threshold(product_id, threshold)
+                        self._send_json(200, {
+                            "product_id": product_id,
+                            "alert_threshold": threshold,
+                        })
+                    finally:
+                        repo.close()
                 product = Product(
                     organisation_id=body.get("organisation_id", ""),
                     sku=body.get("sku", ""),

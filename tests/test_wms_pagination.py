@@ -1089,3 +1089,35 @@ class TestStockAlerts(unittest.TestCase):
             body = r.read().decode("utf-8")
         self.assertIn("id,organisation_id,product_id,warehouse_id,quantity,created_at", body)
         self.assertIn(product_id, body)
+
+    def test_alert_threshold_set_and_get(self):
+        product_id = self._create_stock("SKU-THRESH", 1)
+        body = json.dumps({"threshold": 5}).encode()
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/products/{product_id}/alert-threshold",
+            data=body, headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.status, 200)
+        status, data = self._get(f"/api/v1/wms/products/{product_id}/alert-threshold")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["alert_threshold"], 5)
+
+    def test_alert_threshold_product_not_found(self):
+        status, data = self._get("/api/v1/wms/products/prod-inconnu/alert-threshold")
+        self.assertEqual(status, 404)
+
+    def test_stock_alerts_uses_product_threshold(self):
+        self._create_stock("SKU-TH-A", 3)
+        high_id = self._create_stock("SKU-TH-B", 8)
+        body = json.dumps({"threshold": 10}).encode()
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/products/{high_id}/alert-threshold",
+            data=body, headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        status, data = self._get("/api/v1/wms/stock-alerts", "?threshold=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(data["items"]), 1)
+        self.assertEqual(data["items"][0]["product_id"], high_id)

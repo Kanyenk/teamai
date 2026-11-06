@@ -626,6 +626,21 @@ class HttpHandler(BaseHTTPRequestHandler):
                     })
                 finally:
                     repo.close()
+            elif len(segments) >= 4 and segments[3] == "stock-counts":
+                from xohive.wms.repository.stock_count_repository import StockCountRepository
+                repo = StockCountRepository(self.store.db_path)
+                try:
+                    if len(segments) == 5:
+                        # Consultation d'un comptage
+                        # (GET /api/v1/wms/stock-counts/{id})
+                        count = repo.get(segments[4])
+                        if count is None:
+                            return self._send_error(404, "Stock count not found")
+                        self._send_json(200, {"item": count.to_dict()})
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
             else:
                 self._send_error(404, "Not Found")
         except ValueError as exc:
@@ -765,6 +780,31 @@ class HttpHandler(BaseHTTPRequestHandler):
                     audit_repo.close()
 
                 self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "stock-counts":
+                from xohive.wms.repository.stock_count_repository import StockCountRepository
+                from xohive.wms.domain.stock_count import StockCount
+                repo = StockCountRepository(self.store.db_path)
+                try:
+                    if len(segments) == 4:
+                        # Création d'un comptage (POST /api/v1/wms/stock-counts)
+                        count = StockCount(
+                            organisation_id=body.get("organisation_id", ""),
+                            warehouse_id=body.get("warehouse_id", ""),
+                            product_id=body.get("product_id", ""),
+                            counted_quantity=int(body.get("counted_quantity", 0)),
+                        )
+                        result = repo.create(count)
+                        self._send_json(201, {"item": result.to_dict()})
+                    elif len(segments) >= 6 and segments[5] == "adjust":
+                        # Ajustement d'un comptage
+                        # (POST /api/v1/wms/stock-counts/{id}/adjust)
+                        count_id = segments[4]
+                        result = repo.adjust(count_id, reason=body.get("reason"))
+                        self._send_json(200, result)
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
             elif len(segments) >= 4 and segments[3] == "warehouses":
                 from xohive.wms.repository.warehouse_repository import WarehouseRepository
                 from xohive.wms.domain.warehouse import Warehouse

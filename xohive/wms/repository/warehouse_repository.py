@@ -120,6 +120,12 @@ class WarehouseRepository:
         self.conn.commit()
         return cur.rowcount > 0
 
+    def count(self) -> int:
+        row = self.conn.execute(
+            "SELECT COUNT(*) AS total FROM wms_warehouses"
+        ).fetchone()
+        return row["total"]
+
     @staticmethod
     def _row_to_warehouse(row: sqlite3.Row) -> Warehouse:
         return Warehouse(

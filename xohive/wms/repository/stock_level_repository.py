@@ -118,6 +118,12 @@ class StockLevelRepository:
         self.conn.commit()
         return cur.rowcount > 0
 
+    def count(self) -> int:
+        row = self.conn.execute(
+            "SELECT COUNT(*) AS total FROM wms_stock_levels"
+        ).fetchone()
+        return row["total"]
+
     @staticmethod
     def _row_to_level(row: sqlite3.Row) -> StockLevel:
         return StockLevel(

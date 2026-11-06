@@ -129,3 +129,97 @@ class TestPaginationHttp(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPaginationMetadata(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+        self.products = ProductRepository(self.repo.db_path)
+        self.warehouses = WarehouseRepository(self.repo.db_path)
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _get(self, endpoint, query=""):
+        req = urllib.request.Request(
+            self.base + endpoint + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read())
+
+    def test_products_metadata(self):
+        for i in range(7):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "sku": f"SKU-META-{i:03d}",
+                "name": f"Produit {i}",
+                "default_price": 10.0,
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/products",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        status, data = self._get("/api/v1/wms/products", "?limit=3&offset=2")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 7)
+        self.assertEqual(data["pagination"]["limit"], 3)
+        self.assertEqual(data["pagination"]["offset"], 2)
+        self.assertEqual(len(data["items"]), 3)
+
+    def test_warehouses_metadata(self):
+        for i in range(4):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "code": f"WH-META-{i:03d}",
+                "name": f"Entrepôt {i}",
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/warehouses",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        status, data = self._get("/api/v1/wms/warehouses", "?limit=2&offset=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 4)
+        self.assertEqual(len(data["items"]), 2)
+
+    def test_stock_levels_metadata(self):
+        product = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-SLM", name="P",
+        ))
+        warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-SLM", name="W",
+        ))
+        for _ in range(3):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "product_id": product.id,
+                "warehouse_id": warehouse.id,
+                "movement_type": "in", "quantity": 1,
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/stock-movements",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        status, data = self._get("/api/v1/wms/stock-levels", "?limit=1&offset=0")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 1)
+        self.assertEqual(len(data["items"]), 1)

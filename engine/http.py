@@ -144,7 +144,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
                         products = repo.list(limit=limit, offset=offset)
-                        self._send_json(200, {"items": [p.to_dict() for p in products]})
+                        total = repo.count()
+                        self._send_json(200, {
+                            "items": [p.to_dict() for p in products],
+                            "pagination": {"total": total, "limit": limit, "offset": offset},
+                        })
                 finally:
                     repo.close()
             if len(segments) >= 4 and segments[3] == "stock-movements":
@@ -204,7 +208,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
                         levels = repo.list(limit=limit, offset=offset)
-                        self._send_json(200, {"items": [l.to_dict() for l in levels]})
+                        total = repo.count()
+                        self._send_json(200, {
+                            "items": [l.to_dict() for l in levels],
+                            "pagination": {"total": total, "limit": limit, "offset": offset},
+                        })
                 finally:
                     repo.close()
             if len(segments) >= 4 and segments[3] == "warehouses":
@@ -224,7 +232,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                         limit = int(query.get("limit", ["50"])[0])
                         offset = int(query.get("offset", ["0"])[0])
                         warehouses = repo.list(limit=limit, offset=offset)
-                        self._send_json(200, {"items": [w.to_dict() for w in warehouses]})
+                        total = repo.count()
+                        self._send_json(200, {
+                            "items": [w.to_dict() for w in warehouses],
+                            "pagination": {"total": total, "limit": limit, "offset": offset},
+                        })
                 finally:
                     repo.close()
             else:

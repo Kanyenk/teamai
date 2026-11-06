@@ -79,6 +79,7 @@ class WarehouseRepository:
         organisation_id: str | None = None,
         order_by: str = "created_at",
         direction: str = "asc",
+        search: str | None = None,
     ) -> list[Warehouse]:
         if order_by not in {"created_at", "name", "code"}:
             raise ValueError(
@@ -95,6 +96,10 @@ class WarehouseRepository:
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
+        if search:
+            query += " AND (name LIKE ? OR code LIKE ?)"
+            like = f"%{search}%"
+            params.extend([like, like])
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()

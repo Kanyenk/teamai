@@ -101,6 +101,7 @@ class ProductRepository:
         limit: int = 50,
         order_by: str = "created_at",
         direction: str = "asc",
+        search: str | None = None,
     ) -> List[Product]:
         if order_by not in {"created_at", "name", "sku", "default_price"}:
             raise ValueError(
@@ -117,6 +118,10 @@ class ProductRepository:
         if organisation_id:
             query += " AND organisation_id = ?"
             params.append(organisation_id)
+        if search:
+            query += " AND (name LIKE ? OR sku LIKE ?)"
+            like = f"%{search}%"
+            params.extend([like, like])
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         cur = self.conn.execute(query, params)

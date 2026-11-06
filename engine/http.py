@@ -145,13 +145,16 @@ class HttpHandler(BaseHTTPRequestHandler):
                         offset = int(query.get("offset", ["0"])[0])
                         order_by = query.get("order_by", ["created_at"])[0]
                         direction = query.get("direction", ["asc"])[0]
+                        search = query.get("search", [None])[0]
                         order_by = query.get("order_by", ["created_at"])[0]
                         direction = query.get("direction", ["asc"])[0]
+                        search = query.get("search", [None])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         products = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
+                            search=search
                         )
                         total = repo.count(organisation_id=organisation_id)
                         self._send_json(200, {
@@ -179,6 +182,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         offset = int(query.get("offset", ["0"])[0])
                         order_by = query.get("order_by", ["created_at"])[0]
                         direction = query.get("direction", ["asc"])[0]
+                        search = query.get("search", [None])[0]
                         product_id = query.get("product_id", [None])[0]
                         warehouse_id = query.get("warehouse_id", [None])[0]
                         movement_type = query.get("movement_type", [None])[0]
@@ -223,6 +227,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         offset = int(query.get("offset", ["0"])[0])
                         order_by = query.get("order_by", ["created_at"])[0]
                         direction = query.get("direction", ["asc"])[0]
+                        search = query.get("search", [None])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         levels = repo.list(
                             limit=limit, offset=offset,
@@ -255,11 +260,13 @@ class HttpHandler(BaseHTTPRequestHandler):
                         offset = int(query.get("offset", ["0"])[0])
                         order_by = query.get("order_by", ["created_at"])[0]
                         direction = query.get("direction", ["asc"])[0]
+                        search = query.get("search", [None])[0]
                         organisation_id = query.get("organisation_id", [None])[0]
                         warehouses = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
                             organisation_id=organisation_id,
+                            search=search
                         )
                         total = repo.count(organisation_id=organisation_id)
                         self._send_json(200, {

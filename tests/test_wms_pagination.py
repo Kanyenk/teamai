@@ -414,3 +414,66 @@ class TestSortMetadata(unittest.TestCase):
             data = json.loads(r.read())
         self.assertEqual(data["sort"]["order_by"], "created_at")
         self.assertEqual(data["sort"]["direction"], "asc")
+
+
+class TestSearch(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_warehouses(self):
+        for code, name in [("WH-ALPHA", "Entrepôt Alpha"), ("WH-BETA", "Entrepôt Beta")]:
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "code": code,
+                "name": name,
+            }).encode()
+            req = urllib.request.Request(self.base + "/api/v1/wms/warehouses", data=body, headers=self.headers, method="POST")
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+
+    def test_warehouses_search_by_code(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?search=ALPHA",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        codes = [w["code"] for w in data["items"]]
+        self.assertEqual(codes, ["WH-ALPHA"])
+
+    def test_warehouses_search_by_name(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?search=Beta",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        codes = [w["code"] for w in data["items"]]
+        self.assertEqual(codes, ["WH-BETA"])
+
+    def test_warehouses_search_no_match(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?search=INEXISTANT",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["items"], [])
+        self.assertEqual(data["pagination"]["total"], 0)

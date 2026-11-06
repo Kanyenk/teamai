@@ -10,6 +10,8 @@ from pathlib import Path
 from xohive.wms.domain.stock_movement import StockMovement
 from xohive.wms.domain.stock_level import StockLevel
 from xohive.wms.repository.stock_level_repository import StockLevelRepository
+from xohive.wms.repository.product_repository import ProductRepository
+from xohive.wms.repository.warehouse_repository import WarehouseRepository
 
 
 class StockMovementRepository:
@@ -60,9 +62,30 @@ class StockMovementRepository:
             ))
         return level
 
+    def _validate_references(self, movement: StockMovement) -> None:
+        products = ProductRepository(self.db_path)
+        try:
+            if products.get(movement.product_id) is None:
+                raise ValueError(f"product {movement.product_id} not found")
+        finally:
+            products.close()
+
+        warehouses = WarehouseRepository(self.db_path)
+        try:
+            if warehouses.get_by_id(movement.warehouse_id) is None:
+                raise ValueError(f"warehouse {movement.warehouse_id} not found")
+            if movement.target_warehouse_id:
+                if warehouses.get_by_id(movement.target_warehouse_id) is None:
+                    raise ValueError(
+                        f"target warehouse {movement.target_warehouse_id} not found"
+                    )
+        finally:
+            warehouses.close()
+
     def create(self, movement: StockMovement) -> StockMovement:
         now = datetime.now(timezone.utc).isoformat()
         movement_id = movement.id or str(uuid.uuid4())
+        self._validate_references(movement)
         levels = StockLevelRepository(self.db_path)
         try:
             level = self._get_or_create_level(

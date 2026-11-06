@@ -182,6 +182,24 @@ class HttpHandler(BaseHTTPRequestHandler):
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "stock-adjustments":
+                from engine.stock_adjustment_repository import StockAdjustmentRepository
+                repo = StockAdjustmentRepository(self.store.db_path)
+                adjustment_id = segments[4] if len(segments) > 4 else None
+                if adjustment_id:
+                    adj = repo.get(adjustment_id)
+                    if adj is None:
+                        return self._send_error(404, "Adjustment not found")
+                    self._send_json(200, {"item": adj.to_dict()})
+                    return
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                org_id = query.get("organisation_id", [None])[0]
+                if not org_id:
+                    return self._send_error(400, "organisation_id requis")
+                items = repo.list(org_id)
+                self._send_json(200, {"items": [a.to_dict() for a in items]})
+                return
             if len(segments) >= 4 and segments[3] == "returns":
                 from engine.return_repository import ReturnRepository
                 repo = ReturnRepository(self.store.db_path)
@@ -723,6 +741,24 @@ class HttpHandler(BaseHTTPRequestHandler):
 
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "stock-adjustments":
+                from engine.stock_adjustment_repository import StockAdjustmentRepository
+                from engine.stock_adjustment import StockAdjustment
+                repo = StockAdjustmentRepository(self.store.db_path)
+                adjustment_id = segments[4] if len(segments) > 4 else None
+                if adjustment_id:
+                    return self._send_error(404, "Adjustment not found")
+                adj = StockAdjustment(
+                    organisation_id=body.get("organisation_id", ""),
+                    warehouse_id=body.get("warehouse_id", ""),
+                    product_id=body.get("product_id", ""),
+                    quantity=int(body.get("quantity", 0)),
+                    reason=body.get("reason", ""),
+                    note=body.get("note", ""),
+                )
+                result = repo.create(adj)
+                self._send_json(201, {"item": result.to_dict()})
+                return
             if len(segments) >= 4 and segments[3] == "returns":
                 from engine.return_repository import ReturnRepository
                 from engine.returns import Return

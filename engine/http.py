@@ -165,6 +165,43 @@ class HttpHandler(BaseHTTPRequestHandler):
                         })
                     finally:
                         repo.close()
+                if product_id and len(segments) >= 6 and segments[5] == "stock-movements":
+                    from xohive.wms.repository.stock_movement_repository import StockMovementRepository
+                    repo = ProductRepository(self.store.db_path)
+                    try:
+                        if repo.get(product_id) is None:
+                            return self._send_error(404, "Product not found")
+                    finally:
+                        repo.close()
+                    from urllib.parse import urlparse, parse_qs
+                    query = parse_qs(urlparse(self.path).query)
+                    movements_repo = StockMovementRepository(self.store.db_path)
+                    try:
+                        limit = int(query.get("limit", ["50"])[0])
+                        offset = int(query.get("offset", ["0"])[0])
+                        warehouse_id = query.get("warehouse_id", [None])[0]
+                        movement_type = query.get("movement_type", [None])[0]
+                        order_by = query.get("order_by", ["created_at"])[0]
+                        direction = query.get("direction", ["asc"])[0]
+                        created_from = query.get("created_from", [None])[0]
+                        created_to = query.get("created_to", [None])[0]
+                        movements = movements_repo.list(
+                            limit=limit, offset=offset, product_id=product_id,
+                            warehouse_id=warehouse_id, movement_type=movement_type,
+                            order_by=order_by, direction=direction,
+                            created_from=created_from, created_to=created_to,
+                        )
+                        total = movements_repo.count(
+                            product_id=product_id, warehouse_id=warehouse_id,
+                            movement_type=movement_type,
+                            created_from=created_from, created_to=created_to,
+                        )
+                        self._send_json(200, {
+                            "items": [m.to_dict() for m in movements],
+                            "pagination": {"total": total, "limit": limit, "offset": offset},
+                        })
+                    finally:
+                        movements_repo.close()
                 repo = ProductRepository(self.store.db_path)
                 try:
                     if product_id:

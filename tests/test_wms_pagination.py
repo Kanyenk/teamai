@@ -1166,3 +1166,24 @@ class TestStockAlerts(unittest.TestCase):
     def test_dashboard_stock_missing_organisation_returns_400(self):
         status, data = self._get("/api/v1/wms/dashboard/stock")
         self.assertEqual(status, 400)
+
+    def test_product_stock_movements(self):
+        product_id = self._create_stock("SKU-MV-PROD", 3)
+        status, data = self._get(f"/api/v1/wms/products/{product_id}/stock-movements")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 3)
+        self.assertEqual(len(data["items"]), 3)
+        self.assertTrue(all(m["product_id"] == product_id for m in data["items"]))
+
+    def test_product_stock_movements_not_found(self):
+        status, data = self._get("/api/v1/wms/products/prod-inconnu/stock-movements")
+        self.assertEqual(status, 404)
+
+    def test_product_stock_movements_filter_type(self):
+        product_id = self._create_stock("SKU-MV-FILT", 2)
+        status, data = self._get(
+            f"/api/v1/wms/products/{product_id}/stock-movements",
+            "?movement_type=in",
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(data["pagination"]["total"], 2)

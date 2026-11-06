@@ -1121,3 +1121,48 @@ class TestStockAlerts(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(len(data["items"]), 1)
         self.assertEqual(data["items"][0]["product_id"], high_id)
+
+    def test_dashboard_stock(self):
+        product_a = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-DASH-A", name="A", default_price=10.0,
+        ))
+        product_b = self.products.create(Product(
+            organisation_id="org-1", sku="SKU-DASH-B", name="B", default_price=5.0,
+        ))
+        self.warehouses.create(Warehouse(
+            organisation_id="org-1", code="WH-DASH", name="W",
+        ))
+        for pid, qty in ((product_a.id, 3), (product_b.id, 8)):
+            for _ in range(qty):
+                body = json.dumps({
+                    "organisation_id": "org-1",
+                    "product_id": pid,
+                    "warehouse_id": self.warehouses.list_by_organisation("org-1")[0].id,
+                    "movement_type": "in", "quantity": 1,
+                }).encode()
+                req = urllib.request.Request(
+                    self.base + "/api/v1/wms/stock-movements",
+                    data=body, headers=self.headers, method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10):
+                    pass
+        body = json.dumps({"threshold": 10}).encode()
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/products/{product_b.id}/alert-threshold",
+            data=body, headers=self.headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+
+        status, data = self._get("/api/v1/wms/dashboard/stock", "?organisation_id=org-1")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["stock_value"], 70.0)
+        self.assertEqual(len(data["alerts"]), 1)
+        self.assertEqual(data["alerts"][0]["product_id"], product_b.id)
+        warehouse = data["warehouses"][0]
+        self.assertEqual(warehouse["total_quantity"], 11)
+        self.assertEqual(warehouse["product_count"], 2)
+
+    def test_dashboard_stock_missing_organisation_returns_400(self):
+        status, data = self._get("/api/v1/wms/dashboard/stock")
+        self.assertEqual(status, 400)

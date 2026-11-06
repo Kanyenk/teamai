@@ -409,6 +409,59 @@ class HttpHandler(BaseHTTPRequestHandler):
                         })
                 finally:
                     repo.close()
+            elif len(segments) >= 5 and segments[3] == "dashboard" and segments[4] == "stock":
+                from xohive.wms.repository.stock_level_repository import StockLevelRepository
+                from xohive.wms.repository.warehouse_repository import WarehouseRepository
+                from urllib.parse import urlparse, parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                organisation_id = query.get("organisation_id", [None])[0]
+                if not organisation_id:
+                    return self._send_error(400, "organisation_id is required")
+                levels_repo = StockLevelRepository(self.store.db_path)
+                warehouses_repo = WarehouseRepository(self.store.db_path)
+                products_repo = ProductRepository(self.store.db_path)
+                try:
+                    levels = levels_repo.list_by_organisation(organisation_id)
+                    warehouses = warehouses_repo.list_by_organisation(organisation_id)
+                    thresholds = products_repo.list_alert_thresholds()
+                    prices = {}
+                    per_warehouse = {
+                        w.id: {"warehouse_id": w.id, "code": w.code, "name": w.name,
+                               "total_quantity": 0, "product_count": 0}
+                        for w in warehouses
+                    }
+                    alerts = []
+                    stock_value = 0.0
+                    seen_pairs = set()
+                    for level in levels:
+                        d = level.to_dict()
+                        pid, wid, qty = d["product_id"], d["warehouse_id"], d["quantity"]
+                        if pid not in prices:
+                            product = products_repo.get(pid)
+                            prices[pid] = product.default_price if product else 0.0
+                        stock_value += qty * prices[pid]
+                        entry = per_warehouse.get(wid)
+                        if entry:
+                            entry["total_quantity"] += qty
+                            if (pid, wid) not in seen_pairs:
+                                seen_pairs.add((pid, wid))
+                                entry["product_count"] += 1
+                        effective = thresholds.get(pid)
+                        if effective is not None and qty < effective:
+                            alerts.append({
+                                "product_id": pid, "warehouse_id": wid,
+                                "quantity": qty, "threshold": effective,
+                            })
+                    self._send_json(200, {
+                        "organisation_id": organisation_id,
+                        "warehouses": list(per_warehouse.values()),
+                        "alerts": alerts,
+                        "stock_value": round(stock_value, 2),
+                    })
+                finally:
+                    levels_repo.close()
+                    warehouses_repo.close()
+                    products_repo.close()
             elif len(segments) >= 4 and segments[3] == "stock-alerts":
                 from xohive.wms.repository.stock_level_repository import StockLevelRepository
                 repo = StockLevelRepository(self.store.db_path)

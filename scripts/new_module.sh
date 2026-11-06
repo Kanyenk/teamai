@@ -48,7 +48,7 @@ org_test = next(('"' + str(f.get("test_value") or f.get("default") or "") + '"' 
 
 # ─── Entité ───
 entity_fields = []
-for f in fields:
+for f in sorted(fields, key=lambda x: 0 if "default" not in x else 1):
     if f.get("required"):
         entity_fields.append(f"    {f['name']}: {f['type']}")
     else:
@@ -58,7 +58,7 @@ entity_fields.append('    created_at: datetime = field(default_factory=lambda: d
 entity_fields.append('    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))')
 
 validations = []
-for f in fields:
+for f in sorted(fields, key=lambda x: 0 if "default" not in x else 1):
     if not f.get("required"):
         continue
     n, t = f["name"], f["type"]
@@ -281,7 +281,7 @@ entity_tests = [f'''    def test_creation_valide(self):
         obj = {entity}(**self._defaults())
         self.assertTrue(obj.id.startswith("{prefix}"))
 ''']
-for f in fields:
+for f in sorted(fields, key=lambda x: 0 if "default" not in x else 1):
     if not f.get("required"):
         continue
     if f["type"] == "str":

@@ -157,6 +157,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {
                             "items": [p.to_dict() for p in products],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
+                            "sort": {"order_by": order_by, "direction": direction},
                         })
                 finally:
                     repo.close()
@@ -195,6 +196,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         )
                         self._send_json(200, {
                             "items": [m.to_dict() for m in movements],
+                            "sort": {"order_by": order_by, "direction": direction},
                             "pagination": {
                                 "total": total,
                                 "limit": limit,
@@ -231,6 +233,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {
                             "items": [l.to_dict() for l in levels],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
+                            "sort": {"order_by": order_by, "direction": direction},
                         })
                 finally:
                     repo.close()
@@ -262,6 +265,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_json(200, {
                             "items": [w.to_dict() for w in warehouses],
                             "pagination": {"total": total, "limit": limit, "offset": offset},
+                            "sort": {"order_by": order_by, "direction": direction},
                         })
                 finally:
                     repo.close()

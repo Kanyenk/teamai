@@ -302,3 +302,115 @@ class TestOrganisationFilter(unittest.TestCase):
         self.assertEqual(data["pagination"]["total"], 1)
         status, data = self._get("/api/v1/wms/stock-levels", "?organisation_id=org-9")
         self.assertEqual(data["pagination"]["total"], 0)
+
+
+class TestSorting(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+        self.products = ProductRepository(self.repo.db_path)
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.tmp.cleanup()
+
+    def _get(self, endpoint, query=""):
+        req = urllib.request.Request(
+            self.base + endpoint + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+
+    def test_products_sort_by_name_desc(self):
+        for name in ["Cerise", "Amande", "Banane"]:
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "sku": f"SKU-{name}",
+                "name": name,
+                "default_price": 10.0,
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/products",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        status, data = self._get(
+            "/api/v1/wms/products", "?order_by=name&direction=desc"
+        )
+        self.assertEqual(status, 200)
+        names = [p["name"] for p in data["items"]]
+        self.assertEqual(names, sorted(names, reverse=True))
+
+    def test_products_invalid_order_by_returns_400(self):
+        status, _ = self._get("/api/v1/wms/products", "?order_by=malicious")
+        self.assertEqual(status, 400)
+
+    def test_products_invalid_direction_returns_400(self):
+        status, _ = self._get("/api/v1/wms/products", "?direction=sideways")
+        self.assertEqual(status, 400)
+
+
+class TestSortMetadata(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self._tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self._tmp.cleanup()
+
+    def _create_warehouses(self):
+        for i in range(3):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "code": f"WH-SORT-{i}",
+                "name": f"Entrepôt {i}",
+            }).encode()
+            req = urllib.request.Request(self.base + "/api/v1/wms/warehouses", data=body, headers=self.headers, method="POST")
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+
+    def test_warehouses_sort_metadata(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?limit=2&offset=1&order_by=name&direction=desc",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["sort"]["order_by"], "name")
+        self.assertEqual(data["sort"]["direction"], "desc")
+
+    def test_warehouses_sort_metadata_default(self):
+        self._create_warehouses()
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/warehouses?limit=2&offset=0",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+        self.assertEqual(data["sort"]["order_by"], "created_at")
+        self.assertEqual(data["sort"]["direction"], "asc")

@@ -182,6 +182,24 @@ class HttpHandler(BaseHTTPRequestHandler):
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "returns":
+                from engine.return_repository import ReturnRepository
+                repo = ReturnRepository(self.store.db_path)
+                return_id = segments[4] if len(segments) > 4 else None
+                if return_id:
+                    ret = repo.get(return_id)
+                    if ret is None:
+                        return self._send_error(404, "Return not found")
+                    self._send_json(200, {"item": ret.to_dict()})
+                    return
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                org_id = query.get("organisation_id", [None])[0]
+                if not org_id:
+                    return self._send_error(400, "organisation_id requis")
+                items = repo.list(org_id)
+                self._send_json(200, {"items": [r.to_dict() for r in items]})
+                return
             # segments = [api, v1, wms, products, (id)]
             if len(segments) >= 4 and segments[3] == "products":
                 product_id = segments[4] if len(segments) > 4 else None
@@ -705,6 +723,42 @@ class HttpHandler(BaseHTTPRequestHandler):
 
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "returns":
+                from engine.return_repository import ReturnRepository
+                from engine.returns import Return
+                repo = ReturnRepository(self.store.db_path)
+                return_id = segments[4] if len(segments) > 4 else None
+                action = segments[5] if len(segments) > 5 else None
+                if return_id is None:
+                    ret = Return(
+                        organisation_id=body.get("organisation_id", ""),
+                        order_id=body.get("order_id", ""),
+                        product_id=body.get("product_id", ""),
+                        quantity=int(body.get("quantity", 0)),
+                        reason=body.get("reason", ""),
+                    )
+                    result = repo.create(ret)
+                    self._send_json(201, {"item": result.to_dict()})
+                    return
+                ret = repo.get(return_id)
+                if ret is None:
+                    return self._send_error(404, "Return not found")
+                try:
+                    if action == "request":
+                        ret.mark_requested()
+                    elif action == "receive":
+                        ret.mark_received()
+                    elif action == "refund":
+                        ret.mark_refunded(float(body.get("amount", 0.0)))
+                    elif action == "cancel":
+                        ret.cancel()
+                    else:
+                        return self._send_error(404, "Unknown return action")
+                except ValueError as exc:
+                    return self._send_error(400, str(exc))
+                repo.update(ret)
+                self._send_json(200, {"item": ret.to_dict()})
+                return
             if len(segments) >= 4 and segments[3] == "products":
                 product_id = segments[4] if len(segments) > 4 else None
                 if product_id and len(segments) >= 6 and segments[5] == "alert-threshold":

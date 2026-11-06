@@ -182,6 +182,36 @@ class HttpHandler(BaseHTTPRequestHandler):
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "barcodes":
+                from engine.barcode_repository import BarcodeRepository
+                repo = BarcodeRepository(self.store.db_path)
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                lookup_code = query.get("code", [None])[0]
+                if lookup_code:
+                    org_id = query.get("organisation_id", [None])[0]
+                    if not org_id:
+                        return self._send_error(400, "organisation_id requis")
+                    obj = repo.get_by_code(org_id, lookup_code)
+                    if obj is None:
+                        return self._send_error(404, "Barcode not found")
+                    self._send_json(200, {"item": obj.to_dict()})
+                    return
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    obj = repo.get(obj_id)
+                    if obj is None:
+                        return self._send_error(404, "Barcode not found")
+                    self._send_json(200, {"item": obj.to_dict()})
+                    return
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                org_id = query.get("organisation_id", [None])[0]
+                if not org_id:
+                    return self._send_error(400, "organisation_id requis")
+                items = repo.list(org_id)
+                self._send_json(200, {"items": [o.to_dict() for o in items]})
+                return
             if len(segments) >= 4 and segments[3] == "locations":
                 from engine.location_repository import LocationRepository
                 repo = LocationRepository(self.store.db_path)
@@ -813,6 +843,26 @@ class HttpHandler(BaseHTTPRequestHandler):
 
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "barcodes":
+                from engine.barcode_repository import BarcodeRepository
+                from engine.barcode import Barcode
+                repo = BarcodeRepository(self.store.db_path)
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    return self._send_error(404, "Barcode not found")
+                try:
+                    obj = Barcode(
+                        organisation_id=body.get("organisation_id", ""),
+                        product_id=body.get("product_id", ""),
+                        code=body.get("code", ""),
+                        type=body.get("type", 'ean13'),
+                        label=body.get("label", ''),
+                    )
+                    result = repo.create(obj)
+                except ValueError as e:
+                    return self._send_error(400, str(e))
+                self._send_json(201, {"item": result.to_dict()})
+                return
             if len(segments) >= 4 and segments[3] == "locations":
                 from engine.location_repository import LocationRepository
                 from engine.location import Location

@@ -182,6 +182,66 @@ class TestPurchaseOrderHttpApi(unittest.TestCase):
             urllib.request.urlopen(req, timeout=10)
         self.assertEqual(ctx.exception.code, 401)
 
+    def test_receive_creates_in_movement(self):
+        """POST receive avec produit/quantité crée un mouvement in."""
+        warehouse_id = self._create_warehouse()
+        # Créer un produit.
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/products",
+            data=json.dumps({
+                "organisation_id": "org-1",
+                "sku": "SKU-PO-1",
+                "name": "Produit PO",
+            }).encode(),
+            method="POST",
+            headers=self.headers,
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            product = json.loads(r.read())
+        product_id = product["item"]["id"]
+        # Créer une commande.
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/purchase-orders",
+            data=json.dumps({
+                "organisation_id": "org-1",
+                "supplier_name": "Fournisseur A",
+                "warehouse_id": warehouse_id,
+            }).encode(),
+            method="POST",
+            headers=self.headers,
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            order = json.loads(r.read())
+        order_id = order["item"]["id"]
+        # Réceptionner avec produit + quantité.
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/purchase-orders/{order_id}/receive",
+            data=json.dumps({
+                "product_id": product_id,
+                "warehouse_id": warehouse_id,
+                "quantity": 5,
+            }).encode(),
+            method="POST",
+            headers=self.headers,
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                result = json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            print("ERREUR 400:", e.read().decode())
+            raise
+        self.assertEqual(result["item"]["status"], "received")
+        # Vérifier qu'un mouvement in a été créé.
+        req = urllib.request.Request(
+            self.base + f"/api/v1/wms/stock-movements?organisation_id=org-1&movement_type=in",
+            method="GET",
+            headers=self.headers,
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            movements = json.loads(r.read())
+        self.assertTrue(len(movements.get("items", [])) > 0)
+
+
 
 if __name__ == "__main__":
     unittest.main()

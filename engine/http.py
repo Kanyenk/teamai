@@ -1345,6 +1345,27 @@ fetch("/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
                         # Réception d'une commande
                         # (POST /api/v1/wms/purchase-orders/{id}/receive)
                         order_id = segments[4]
+                        order = repo.get_by_id(order_id)
+                        if order is None:
+                            return self._send_error(404, "PurchaseOrder not found")
+                        product_id = body.get("product_id")
+                        warehouse_id = body.get("warehouse_id") or order.warehouse_id
+                        quantity = body.get("quantity")
+                        if product_id and warehouse_id and quantity:
+                            from xohive.wms.repository.stock_movement_repository import StockMovementRepository
+                            from xohive.wms.domain.stock_movement import StockMovement
+                            movements_repo = StockMovementRepository(self.store.db_path)
+                            try:
+                                movement = StockMovement(
+                                    organisation_id=order.organisation_id,
+                                    product_id=product_id,
+                                    warehouse_id=warehouse_id,
+                                    movement_type="in",
+                                    quantity=int(quantity),
+                                )
+                                movements_repo.create(movement)
+                            finally:
+                                movements_repo.close()
                         result = repo.update_status(order_id, "received")
                         self._send_json(200, {"item": result.to_dict()})
                     else:

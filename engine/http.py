@@ -1050,6 +1050,54 @@ class HttpHandler(BaseHTTPRequestHandler):
                     audit_repo.close()
 
                 self._send_json(201, {"item": result.to_dict()})
+            elif len(segments) >= 4 and segments[3] == "scan":
+                from engine.barcode_repository import BarcodeRepository
+                from xohive.wms.repository.stock_movement_repository import StockMovementRepository
+                from xohive.wms.domain.stock_movement import StockMovement
+                barcode_repo = BarcodeRepository(self.store.db_path)
+                barcode = barcode_repo.get_by_code(
+                    body.get("organisation_id", ""),
+                    body.get("code", ""),
+                )
+                if barcode is None:
+                    return self._send_error(404, "Barcode not found")
+                movement = StockMovement(
+                    organisation_id=body.get("organisation_id", ""),
+                    product_id=barcode.product_id,
+                    warehouse_id=body.get("warehouse_id", ""),
+                    movement_type=body.get("movement_type", ""),
+                    quantity=int(body.get("quantity", 0)),
+                    target_warehouse_id=body.get("target_warehouse_id"),
+                    reason=body.get("reason"),
+                )
+                repo = StockMovementRepository(self.store.db_path)
+                try:
+                    result = repo.create(movement)
+                except ValueError as e:
+                    return self._send_error(400, str(e))
+                finally:
+                    repo.close()
+                audit_repo = AuditCRMRepository(self.store.db_path)
+                try:
+                    audit_repo.create(AuditEvent(
+                        id=uuid.uuid4().hex,
+                        organisation_id=result.organisation_id,
+                        entity_type="stock_movement",
+                        entity_id=result.id,
+                        action="create",
+                        old_values=None,
+                        new_values={
+                            "id": result.id,
+                            "product_id": result.product_id,
+                            "warehouse_id": result.warehouse_id,
+                            "movement_type": result.movement_type,
+                            "quantity": result.quantity,
+                            "scanned_code": barcode.code,
+                        },
+                    ))
+                finally:
+                    audit_repo.close()
+                self._send_json(201, {"item": result.to_dict(), "barcode": barcode.to_dict()})
             elif len(segments) >= 4 and segments[3] == "stock-movements":
                 from xohive.wms.repository.stock_movement_repository import StockMovementRepository
                 from xohive.wms.domain.stock_movement import StockMovement

@@ -1076,3 +1076,16 @@ class TestStockAlerts(unittest.TestCase):
     def test_stock_alerts_invalid_threshold_returns_400(self):
         status, data = self._get("/api/v1/wms/stock-alerts", "?threshold=abc")
         self.assertEqual(status, 400)
+
+    def test_stock_alerts_csv_format(self):
+        product_id = self._create_stock("SKU-ALERT-CSV", 3)
+        req = urllib.request.Request(
+            self.base + "/api/v1/wms/stock-alerts?threshold=5&format=csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.headers.get("Content-Type"), "text/csv; charset=utf-8")
+            body = r.read().decode("utf-8")
+        self.assertIn("id,organisation_id,product_id,warehouse_id,quantity,created_at", body)
+        self.assertIn(product_id, body)

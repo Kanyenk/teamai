@@ -421,6 +421,11 @@ class HttpHandler(BaseHTTPRequestHandler):
                         organisation_id=organisation_id,
                         max_quantity=threshold - 1,
                     )
+                    if query.get("format", ["json"])[0] == "csv":
+                        header = ["id", "organisation_id", "product_id", "warehouse_id", "quantity", "created_at"]
+                        rows = [[l.to_dict().get(k) for k in header] for l in levels]
+                        self._send_csv(200, "stock_alerts.csv", header, rows)
+                        return
                     self._send_json(200, {
                         "items": [l.to_dict() for l in levels],
                         "pagination": {"total": total, "limit": limit, "offset": offset},

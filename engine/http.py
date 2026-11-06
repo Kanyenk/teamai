@@ -197,6 +197,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                         return self._send_error(404, "Barcode not found")
                     self._send_json(200, {"item": obj.to_dict()})
                     return
+                if len(segments) > 4 and segments[4] == "lookup":
+                    return self._send_error(400, "code requis")
                 obj_id = segments[4] if len(segments) > 4 else None
                 if obj_id:
                     obj = repo.get(obj_id)

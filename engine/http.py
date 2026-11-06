@@ -197,6 +197,13 @@ class HttpHandler(BaseHTTPRequestHandler):
                         movement_type = query.get("movement_type", [None])[0]
                         created_from = query.get("created_from", [None])[0]
                         created_to = query.get("created_to", [None])[0]
+                        min_quantity = query.get("min_quantity", [None])[0]
+                        max_quantity = query.get("max_quantity", [None])[0]
+                        try:
+                            min_quantity = int(min_quantity) if min_quantity is not None else None
+                            max_quantity = int(max_quantity) if max_quantity is not None else None
+                        except ValueError:
+                            return self._send_error(400, "min_quantity and max_quantity must be integers")
                         movements = repo.list(
                             limit=limit, offset=offset,
                             order_by=order_by, direction=direction,
@@ -205,6 +212,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                             movement_type=movement_type,
                             created_from=created_from,
                             created_to=created_to,
+                            min_quantity=min_quantity,
+                            max_quantity=max_quantity,
                         )
                         total = repo.count(
                             product_id=product_id,
@@ -212,6 +221,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                             movement_type=movement_type,
                             created_from=created_from,
                             created_to=created_to,
+                            min_quantity=min_quantity,
+                            max_quantity=max_quantity,
                         )
                         self._send_json(200, {
                             "items": [m.to_dict() for m in movements],

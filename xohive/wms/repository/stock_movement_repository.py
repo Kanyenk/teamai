@@ -163,6 +163,8 @@ class StockMovementRepository:
         direction: str = "asc",
         created_from: str | None = None,
         created_to: str | None = None,
+        min_quantity: int | None = None,
+        max_quantity: int | None = None,
     ) -> list[StockMovement]:
         if order_by not in {"created_at", "quantity", "movement_type"}:
             raise ValueError(
@@ -195,6 +197,12 @@ class StockMovementRepository:
         if created_to:
             query += " AND created_at <= ?"
             params.append(created_to)
+        if min_quantity is not None:
+            query += " AND quantity >= ?"
+            params.append(min_quantity)
+        if max_quantity is not None:
+            query += " AND quantity <= ?"
+            params.append(max_quantity)
         query += f" ORDER BY {order_by} {direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         rows = self.conn.execute(query, params).fetchall()
@@ -207,6 +215,8 @@ class StockMovementRepository:
         movement_type: str | None = None,
         created_from: str | None = None,
         created_to: str | None = None,
+        min_quantity: int | None = None,
+        max_quantity: int | None = None,
     ) -> int:
         query = "SELECT COUNT(*) AS total FROM wms_stock_movements WHERE 1=1"
         params: list = []
@@ -225,6 +235,12 @@ class StockMovementRepository:
         if created_to:
             query += " AND created_at <= ?"
             params.append(created_to)
+        if min_quantity is not None:
+            query += " AND quantity >= ?"
+            params.append(min_quantity)
+        if max_quantity is not None:
+            query += " AND quantity <= ?"
+            params.append(max_quantity)
         row = self.conn.execute(query, params).fetchone()
         return row["total"]
 

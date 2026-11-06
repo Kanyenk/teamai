@@ -74,6 +74,33 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_html(self, status: int, html: str):
+        """Envoie une réponse HTML (pour l'interface WMS minimale)."""
+        body = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_wms_dashboard(self):
+        """Page dashboard WMS minimale avec liens vers les exports CSV."""
+        html = """<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>WMS - Dashboard</title></head>
+<body>
+<h1>WMS - Dashboard</h1>
+<ul>
+<li><a href="/api/v1/wms/stock-dashboard?format=csv">Export CSV dashboard stock</a></li>
+<li><a href="/api/v1/wms/stock-movements?format=csv">Export CSV mouvements</a></li>
+<li><a href="/api/v1/wms/stock-alerts?format=csv">Export CSV alertes</a></li>
+</ul>
+<p>Note : les exports nécessitent un token Bearer valide.</p>
+</body>
+</html>"""
+        self._send_html(200, html)
+
     def _read_body(self) -> Dict:
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
@@ -105,6 +132,10 @@ class HttpHandler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         path = self.path.rstrip("/") or "/documents"
+        # Route UI : dashboard WMS minimal
+        if path == "/wms":
+            return self._send_wms_dashboard()
+
         # Routes CRM
         if path.startswith("/api/v1/crm/"):
             return self._handle_crm_get(path)

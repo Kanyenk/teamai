@@ -664,6 +664,29 @@ class HttpHandler(BaseHTTPRequestHandler):
                         self._send_error(404, "Not Found")
                 finally:
                     repo.close()
+            elif len(segments) >= 4 and segments[3] == "shipments":
+                from xohive.wms.repository.shipment_repository import ShipmentRepository
+                repo = ShipmentRepository(self.store.db_path)
+                try:
+                    if len(segments) == 4:
+                        # Liste des expéditions d'une organisation
+                        # (GET /api/v1/wms/shipments?organisation_id=...)
+                        from urllib.parse import urlparse, parse_qs
+                        params = parse_qs(urlparse(self.path).query)
+                        org = params.get("organisation_id", [""])[0]
+                        items = repo.list_by_organisation(org)
+                        self._send_json(200, {"items": [s.to_dict() for s in items]})
+                    elif len(segments) == 5:
+                        # Consultation d'une expédition
+                        # (GET /api/v1/wms/shipments/{id})
+                        shipment = repo.get_by_id(segments[4])
+                        if shipment is None:
+                            return self._send_error(404, "Shipment not found")
+                        self._send_json(200, {"item": shipment.to_dict()})
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
             else:
                 self._send_error(404, "Not Found")
         except ValueError as exc:
@@ -849,6 +872,37 @@ class HttpHandler(BaseHTTPRequestHandler):
                         order_id = segments[4]
                         result = repo.update_status(order_id, "received")
                         self._send_json(200, {"item": result.to_dict()})
+                    else:
+                        self._send_error(404, "Not Found")
+                finally:
+                    repo.close()
+            elif len(segments) >= 4 and segments[3] == "shipments":
+                from xohive.wms.repository.shipment_repository import ShipmentRepository
+                from xohive.wms.domain.shipment import Shipment
+                repo = ShipmentRepository(self.store.db_path)
+                try:
+                    if len(segments) == 4:
+                        # Création d'une expédition
+                        # (POST /api/v1/wms/shipments)
+                        shipment = Shipment(
+                            organisation_id=body.get("organisation_id", ""),
+                            order_id=body.get("order_id", ""),
+                            warehouse_id=body.get("warehouse_id", ""),
+                            product_id=body.get("product_id", ""),
+                            quantity=int(body.get("quantity", 0)),
+                        )
+                        result = repo.create(shipment)
+                        self._send_json(201, {"item": result.to_dict()})
+                    elif len(segments) >= 6 and segments[5] == "ship":
+                        # Expédition d'une commande
+                        # (POST /api/v1/wms/shipments/{id}/ship)
+                        shipment_id = segments[4]
+                        result = repo.ship(
+                            shipment_id,
+                            carrier=body.get("carrier"),
+                            tracking_number=body.get("tracking_number"),
+                        )
+                        self._send_json(200, result)
                     else:
                         self._send_error(404, "Not Found")
                 finally:

@@ -182,6 +182,24 @@ class HttpHandler(BaseHTTPRequestHandler):
         try:
             from xohive.wms.repository.product_repository import ProductRepository
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "suppliers":
+                from engine.supplier_repository import SupplierRepository
+                repo = SupplierRepository(self.store.db_path)
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    obj = repo.get(obj_id)
+                    if obj is None:
+                        return self._send_error(404, "Supplier not found")
+                    self._send_json(200, {"item": obj.to_dict()})
+                    return
+                from urllib.parse import parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                org_id = query.get("organisation_id", [None])[0]
+                if not org_id:
+                    return self._send_error(400, "organisation_id requis")
+                items = repo.list(org_id)
+                self._send_json(200, {"items": [o.to_dict() for o in items]})
+                return
             if len(segments) >= 4 and segments[3] == "inventories":
                 from engine.inventory_repository import InventoryRepository
                 repo = InventoryRepository(self.store.db_path)
@@ -759,6 +777,26 @@ class HttpHandler(BaseHTTPRequestHandler):
 
             body = self._read_body()
             segments = [s for s in path.split("/") if s]
+            if len(segments) >= 4 and segments[3] == "suppliers":
+                from engine.supplier_repository import SupplierRepository
+                from engine.supplier import Supplier
+                repo = SupplierRepository(self.store.db_path)
+                obj_id = segments[4] if len(segments) > 4 else None
+                if obj_id:
+                    return self._send_error(404, "Supplier not found")
+                try:
+                    obj = Supplier(
+                        organisation_id=body.get("organisation_id", ""),
+                        name=body.get("name", ""),
+                        email=body.get("email", ""),
+                        phone=body.get("phone", ""),
+                        address=body.get("address", ""),
+                    )
+                    result = repo.create(obj)
+                except ValueError as e:
+                    return self._send_error(400, str(e))
+                self._send_json(201, {"item": result.to_dict()})
+                return
             if len(segments) >= 4 and segments[3] == "inventories":
                 from engine.inventory_repository import InventoryRepository
                 from engine.inventory import Inventory

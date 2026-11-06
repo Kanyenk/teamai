@@ -125,3 +125,11 @@ La documentation est disponible dans [docs/api_inventory.md](docs/api_inventory.
 - POST /api/v1/wms/inventories : créer (201).
 - GET /api/v1/wms/inventories : lister (200).
 - GET /api/v1/wms/inventories/{id} : consulter (200/404).
+
+## API Supplier (Supplier)
+
+La documentation est disponible dans [docs/api_supplier.md](docs/api_supplier.md).
+
+- POST /api/v1/wms/suppliers : créer (201).
+- GET /api/v1/wms/suppliers : lister (200).
+- GET /api/v1/wms/suppliers/{id} : consulter (200/404).

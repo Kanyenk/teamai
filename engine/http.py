@@ -398,6 +398,36 @@ class HttpHandler(BaseHTTPRequestHandler):
                         })
                 finally:
                     repo.close()
+            elif len(segments) >= 4 and segments[3] == "stock-alerts":
+                from xohive.wms.repository.stock_level_repository import StockLevelRepository
+                repo = StockLevelRepository(self.store.db_path)
+                try:
+                    from urllib.parse import urlparse, parse_qs
+                    query = parse_qs(urlparse(self.path).query)
+                    threshold_raw = query.get("threshold", [None])[0]
+                    try:
+                        threshold = int(threshold_raw)
+                    except (TypeError, ValueError):
+                        return self._send_error(400, "threshold must be an integer")
+                    organisation_id = query.get("organisation_id", [None])[0]
+                    limit = int(query.get("limit", ["50"])[0])
+                    offset = int(query.get("offset", ["0"])[0])
+                    levels = repo.list(
+                        limit=limit, offset=offset,
+                        organisation_id=organisation_id,
+                        max_quantity=threshold - 1,
+                    )
+                    total = repo.count(
+                        organisation_id=organisation_id,
+                        max_quantity=threshold - 1,
+                    )
+                    self._send_json(200, {
+                        "items": [l.to_dict() for l in levels],
+                        "pagination": {"total": total, "limit": limit, "offset": offset},
+                        "threshold": threshold,
+                    })
+                finally:
+                    repo.close()
             else:
                 self._send_error(404, "Not Found")
         except ValueError as exc:

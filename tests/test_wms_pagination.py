@@ -1002,3 +1002,77 @@ class TestDateValidation(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             urllib.request.urlopen(req, timeout=10)
         self.assertEqual(ctx.exception.code, 400)
+
+
+class TestStockAlerts(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = DocumentRepository(Path(self.tmp.name) / "test.db")
+        self.auth = TokenAuth({"test-token"})
+        self.server = HTTPServer(("127.0.0.1", 0), make_app(self.repo, auth=self.auth))
+        self.server.store = self.repo
+        self.server.auth = self.auth
+        HttpHandler.log_message = lambda self, *a, **k: None
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.headers = {"Authorization": "Bearer test-token", "Content-Type": "application/json"}
+        self.products = ProductRepository(self.repo.db_path)
+        self.warehouses = WarehouseRepository(self.repo.db_path)
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.products.close()
+        self.warehouses.close()
+        self.tmp.cleanup()
+
+    def _get(self, endpoint, query=""):
+        req = urllib.request.Request(
+            self.base + endpoint + query,
+            headers={"Authorization": "Bearer test-token"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+
+    def _create_stock(self, sku, quantity):
+        product = self.products.create(Product(
+            organisation_id="org-1", sku=sku, name=f"P-{sku}",
+        ))
+        warehouse = self.warehouses.create(Warehouse(
+            organisation_id="org-1", code=f"WH-{sku}", name="W",
+        ))
+        for _ in range(quantity):
+            body = json.dumps({
+                "organisation_id": "org-1",
+                "product_id": product.id,
+                "warehouse_id": warehouse.id,
+                "movement_type": "in", "quantity": 1,
+            }).encode()
+            req = urllib.request.Request(
+                self.base + "/api/v1/wms/stock-movements",
+                data=body, headers=self.headers, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        return product.id
+
+    def test_stock_alerts_below_threshold(self):
+        low_id = self._create_stock("SKU-ALERT-LOW", 3)
+        self._create_stock("SKU-ALERT-HIGH", 10)
+        status, data = self._get("/api/v1/wms/stock-alerts", "?threshold=5")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["threshold"], 5)
+        self.assertEqual(len(data["items"]), 1)
+        self.assertEqual(data["items"][0]["product_id"], low_id)
+
+    def test_stock_alerts_no_results(self):
+        self._create_stock("SKU-ALERT-ZERO", 2)
+        status, data = self._get("/api/v1/wms/stock-alerts", "?threshold=0")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["items"], [])
+
+    def test_stock_alerts_invalid_threshold_returns_400(self):
+        status, data = self._get("/api/v1/wms/stock-alerts", "?threshold=abc")
+        self.assertEqual(status, 400)

@@ -61,14 +61,16 @@ Ajuster un comptage (crée un mouvement de régularisation).
 **Réponse (200) :**
 ```json
 {
-  "count": {
-    "id": "count-1",
-    "status": "adjusted"
-  },
+  "count_id": "count-1",
+  "theoretical_quantity": 5,
+  "counted_quantity": 3,
   "difference": -2,
-  "movement_id": "mov-1"
+  "movement_id": "mov-1",
+  "status": "adjusted"
 }
 ```
+
+Si l'écart est nul, `movement_id` est `null` et aucun mouvement n'est créé.
 
 **Réponse (400) :** comptage déjà ajusté.
 

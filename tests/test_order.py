@@ -116,7 +116,7 @@ class TestOrderRepository(unittest.TestCase):
             "organisation_id": "org-1",
             "company_id": "cmp-1",
             "quotation_id": "quote-1",
-            "order_date": datetime.now(timezone.utc).isoformat(),
+            "order_date": "2026-11-05",
             "delivery_date": "2026-11-10",
             "shipping_method": "standard",
             "total_amount": 2500.00,

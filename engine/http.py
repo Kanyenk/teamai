@@ -335,9 +335,10 @@ fetch("/api/v1/wms/scan-history?organisation_id=org-1&limit=10")
                     return
                 if len(segments) > 4 and segments[4] == "lookup":
                     return self._send_error(400, "code requis")
-                if len(segments) > 5 and segments[5] == "label":
+                if len(segments) >= 6 and segments[3] == "barcodes" and segments[5] == "label":
                     from engine.barcode_label import generate_label_png, generate_label_svg
-                    obj = repo.get(segments[4])
+                    obj_id = segments[5]
+                    obj = repo.get(obj_id)
                     if obj is None:
                         return self._send_error(404, "Barcode not found")
                     fmt = query.get("format", ["svg"])[0]
